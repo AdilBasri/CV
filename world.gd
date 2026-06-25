@@ -450,6 +450,7 @@ func setup_ps2_screen_shader():
 	color_rect.offset_top = 0
 	color_rect.offset_right = 0
 	color_rect.offset_bottom = 0
+	color_rect.size = Vector2(640, 480)
 	color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas_layer.add_child(color_rect)
 	
@@ -735,6 +736,7 @@ func setup_ui():
 	fade_rect.offset_top = 0
 	fade_rect.offset_right = 0
 	fade_rect.offset_bottom = 0
+	fade_rect.size = Vector2(640, 480)
 	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fade_layer.add_child(fade_rect)
 	

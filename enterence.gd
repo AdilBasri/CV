@@ -39,6 +39,8 @@ var current_faq_tab = "project"
 var current_resolution_idx = 4
 var current_subtitles_enabled = true
 var current_colorblind_mode = 0
+var intro_active = false
+var skip_intro = false
 
 # UI Controls references
 var play_btn: Button = null
@@ -1019,6 +1021,7 @@ func _on_play_pressed():
 	fade.anchor_top = 0.0
 	fade.anchor_right = 1.0
 	fade.anchor_bottom = 1.0
+	fade.size = Vector2(640, 480)
 	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fade_layer.add_child(fade)
 	
@@ -1060,15 +1063,39 @@ func _on_play_pressed():
 	for idx in range(min(raw_subs.size(), durations.size())):
 		lines.append({"text": "[center]" + raw_subs[idx] + "[/center]", "duration": durations[idx]})
 		
+	intro_active = true
+	skip_intro = false
+	
 	for entry in lines:
+		if skip_intro:
+			break
 		subtitle.clear()
 		if current_subtitles_enabled:
 			subtitle.append_text(entry.text)
-		await get_tree().create_timer(entry.duration).timeout
 		
-	# After subtitles, short pause before scene change
-	await get_tree().create_timer(1.0).timeout
+		# Wait loop in 0.1s steps to allow skipping via 'P' key
+		var remaining = entry.duration
+		while remaining > 0.0:
+			if skip_intro:
+				break
+			await get_tree().create_timer(0.1).timeout
+			remaining -= 0.1
+			
+	intro_active = false
+	
+	# If skip was requested, stop the entrance audio immediately
+	if skip_intro and entrance_audio:
+		entrance_audio.stop()
+		
+	# After subtitles, short pause before scene change (if not skipped)
+	if not skip_intro:
+		await get_tree().create_timer(1.0).timeout
 	get_tree().change_scene_to_file("res://world.tscn")
+
+func _input(event):
+	if intro_active and event is InputEventKey and event.pressed and event.keycode == KEY_P:
+		print("P key pressed: Skipping intro subtitles and audio.")
+		skip_intro = true
 
 func _on_options_pressed():
 	play_click_sfx()
