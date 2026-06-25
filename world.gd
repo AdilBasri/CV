@@ -1723,24 +1723,10 @@ func apply_settings_from_config():
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
-		
-	var resolution_idx = config.get_value("video", "resolution", 4) # Default 1920x1080
-	var resolutions = [
-		Vector2i(640, 480),
-		Vector2i(800, 600),
-		Vector2i(1024, 768),
-		Vector2i(1280, 720),
-		Vector2i(1920, 1080)
-	]
-	if resolution_idx >= 0 and resolution_idx < resolutions.size():
-		var res = resolutions[resolution_idx]
-		if not fullscreen:
-			DisplayServer.window_set_size(res)
-			var screen_id = DisplayServer.window_get_current_screen()
-			var screen_size = DisplayServer.screen_get_size(screen_id)
-			DisplayServer.window_set_position((screen_size - res) / 2)
-		else:
-			get_viewport().size = res
+		DisplayServer.window_set_size(Vector2i(960, 720))
+		var screen_id = DisplayServer.window_get_current_screen()
+		var screen_size = DisplayServer.screen_get_size(screen_id)
+		DisplayServer.window_set_position((screen_size - Vector2i(960, 720)) / 2)
 			
 	var shader_intensity = config.get_value("video", "shader_intensity", 1.0)
 	if ps2_material:

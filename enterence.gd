@@ -667,36 +667,9 @@ func setup_options_panel():
 	)
 	video_panel.add_child(fullscreen_btn)
 	
-	resolution_btn = Button.new()
-	resolution_btn.position = Vector2(20, 80)
-	resolution_btn.size = Vector2(380, 40)
-	setup_button(resolution_btn, "resolution", func():
-		play_click_sfx()
-		current_resolution_idx = (current_resolution_idx + 1) % 5
-		var resolutions = [
-			Vector2i(640, 480),
-			Vector2i(800, 600),
-			Vector2i(1024, 768),
-			Vector2i(1280, 720),
-			Vector2i(1920, 1080)
-		]
-		var res = resolutions[current_resolution_idx]
-		var is_fs = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN or DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-		if not is_fs:
-			DisplayServer.window_set_size(res)
-			var screen_id = DisplayServer.window_get_current_screen()
-			var screen_size = DisplayServer.screen_get_size(screen_id)
-			DisplayServer.window_set_position((screen_size - res) / 2)
-		else:
-			get_viewport().size = res
-		update_video_labels()
-		save_settings()
-	)
-	video_panel.add_child(resolution_btn)
-	
 	shader_intensity_label = Label.new()
 	shader_intensity_slider = HSlider.new()
-	setup_audio_slider(shader_intensity_label, shader_intensity_slider, "shader_intensity", 150, func(val):
+	setup_audio_slider(shader_intensity_label, shader_intensity_slider, "shader_intensity", 80, func(val):
 		update_video_labels()
 		save_settings()
 	)
@@ -1010,6 +983,10 @@ func toggle_fullscreen():
 	var mode = DisplayServer.window_get_mode()
 	if mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_FULLSCREEN:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		DisplayServer.window_set_size(Vector2i(960, 720))
+		var screen_id = DisplayServer.window_get_current_screen()
+		var screen_size = DisplayServer.screen_get_size(screen_id)
+		DisplayServer.window_set_position((screen_size - Vector2i(960, 720)) / 2)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
 
@@ -1387,24 +1364,10 @@ func load_settings():
 			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
 		else:
 			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
-			
-		current_resolution_idx = config.get_value("video", "resolution", 4)
-		var resolutions = [
-			Vector2i(640, 480),
-			Vector2i(800, 600),
-			Vector2i(1024, 768),
-			Vector2i(1280, 720),
-			Vector2i(1920, 1080)
-		]
-		if current_resolution_idx >= 0 and current_resolution_idx < resolutions.size():
-			var res = resolutions[current_resolution_idx]
-			if not is_fs:
-				DisplayServer.window_set_size(res)
-				var screen_id = DisplayServer.window_get_current_screen()
-				var screen_size = DisplayServer.screen_get_size(screen_id)
-				DisplayServer.window_set_position((screen_size - res) / 2)
-			else:
-				get_viewport().size = res
+			DisplayServer.window_set_size(Vector2i(960, 720))
+			var screen_id = DisplayServer.window_get_current_screen()
+			var screen_size = DisplayServer.screen_get_size(screen_id)
+			DisplayServer.window_set_position((screen_size - Vector2i(960, 720)) / 2)
 				
 		var shader_intensity = config.get_value("video", "shader_intensity", 1.0)
 		if shader_intensity_slider: shader_intensity_slider.value = shader_intensity
@@ -1486,10 +1449,6 @@ func update_video_labels():
 	if fullscreen_btn:
 		var fs_str = data["on"] if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN or DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN else data["off"]
 		fullscreen_btn.text = "  " + (data["fullscreen"] % fs_str)
-	if resolution_btn:
-		var resolutions = ["640x480", "800x600", "1024x768", "1280x720", "1920x1080"]
-		var res_str = resolutions[clamp(current_resolution_idx, 0, resolutions.size() - 1)]
-		resolution_btn.text = "  " + (data["resolution"] % res_str)
 	if shader_intensity_label and shader_intensity_slider:
 		shader_intensity_label.text = data["shader_intensity"] % int(shader_intensity_slider.value * 100)
 
