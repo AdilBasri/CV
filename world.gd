@@ -241,6 +241,19 @@ func setup_climax_elements():
 		enemy_node.set_script(load("res://enemy.gd"))
 		enemy_node.set_physics_process(true)
 		print("Enemy script and physics process set up successfully.")
+		var anim_player = enemy_node.get_node_or_null("AnimationPlayer")
+		if not anim_player:
+			for child in enemy_node.get_children():
+				if child is AnimationPlayer:
+					anim_player = child
+					break
+				for subchild in child.get_children():
+					if subchild is AnimationPlayer:
+						anim_player = subchild
+						break
+		if anim_player:
+			anim_player.stop()
+			print("Enemy AnimationPlayer stopped at startup.")
 		print("Enemy tree structure:")
 		print_node_hierarchy(enemy_node, "")
 		
@@ -1528,6 +1541,8 @@ func start_climax_sequence():
 		cinematic_cam1.current = true
 		
 	if enemy_node:
+		if enemy_spawn:
+			enemy_node.global_position = enemy_spawn.global_position
 		enemy_node.visible = true
 		
 	# 3. Aydınlanma (Fade in)

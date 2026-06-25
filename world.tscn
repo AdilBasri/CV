@@ -17,7 +17,6 @@
 [ext_resource type="Script" uid="uid://bpelwywatbolr" path="res://world.gd" id="11_world_script"]
 [ext_resource type="PackedScene" uid="uid://752shu0uye4p" path="res://Animations/character--male/source/Character_Male.fbx" id="12_k3n1d"]
 [ext_resource type="PackedScene" uid="uid://b7vnyi8b7cuc0" path="res://caravan/scene.gltf" id="17_udxuc"]
-[ext_resource type="PackedScene" uid="uid://ba2rboy6jnk36" path="res://car2/scene.gltf" id="18_ikiii"]
 [ext_resource type="PackedScene" uid="uid://b1vg8ds37g4jt" path="res://car3/scene.gltf" id="19_bc84e"]
 [ext_resource type="PackedScene" uid="uid://bfuk7d2kobx66" path="res://chair/scene.gltf" id="20_wukud"]
 [ext_resource type="PackedScene" uid="uid://67jo6r21sn6q" path="res://furnitures/scene.gltf" id="21_il2jm"]
@@ -33,6 +32,7 @@
 [ext_resource type="Texture2D" uid="uid://miwox1bwghct" path="res://furnitures/textures/bedside_table2_baseColor.png" id="30_w44yn"]
 [ext_resource type="PackedScene" uid="uid://dtab7ykoxm8ej" path="res://free_low_poly_document_file_folder/scene.gltf" id="31_6ah6f"]
 [ext_resource type="PackedScene" uid="uid://d2o77qnhxweh5" path="res://psx_table_lamp/scene.gltf" id="32_g1i3r"]
+[ext_resource type="PackedScene" uid="uid://d0hemyew8tfno" path="res://enemy.tscn" id="34_6ah6f"]
 [ext_resource type="PackedScene" uid="uid://ba2rboy6jnk36" path="res://car2/scene.gltf" id="34_w44yn"]
 
 [sub_resource type="Animation" id="Animation_ikiii"]
@@ -1097,7 +1097,7 @@ skeleton = NodePath("../..")
 [node name="caravan" parent="." instance=ExtResource("17_udxuc")]
 transform = Transform3D(1.4883583, -0.1865193, -4.435654e-08, 0.1865193, 1.4883583, -5.5587073e-09, 4.470349e-08, -1.3322676e-15, 1.5, 22.467392, 0.03813255, -43.51339)
 
-[node name="car2" parent="." instance=ExtResource("18_ikiii")]
+[node name="car2" parent="." instance=ExtResource("34_w44yn")]
 transform = Transform3D(-0.059463136, 0, 0.9982305, 0, 1, 0, -0.9982305, 0, -0.059463136, 36.224747, -0.46906567, -3.1979237)
 
 [node name="car3" parent="." instance=ExtResource("19_bc84e")]
@@ -1349,27 +1349,33 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.8896265, 0, -16.268291)
 [node name="PlayerEscapePoint" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8600593, 0, -27.76998)
 
-[node name="enemy" parent="." instance=ExtResource("34_w44yn")]
-transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -14.224194, 40.77168, -20.919086)
+[node name="enemy" type="Node3D" parent="."]
 
-[node name="Skeleton3D" parent="enemy/Sketchfab_model/fbx_merge_fbx/Object_2/RootNode/Sign-Root/Object_5" index="0"]
+[node name="monster" parent="enemy" instance=ExtResource("34_6ah6f")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
+
+[node name="Skeleton3D" parent="enemy/monster/Sketchfab_model/fbx_merge_fbx/Object_2/RootNode/Sign-Root/Object_5" index="0"]
 bones/1/position = Vector3(-4.37114e-08, -44.30484, -3.8146973e-06)
+bones/1/rotation = Quaternion(-0.7071068, 0, 0, 0.7071067)
+bones/2/rotation = Quaternion(0, 0, 0, 1)
+bones/3/position = Vector3(9.5, 1.4999969, 22)
 bones/3/rotation = Quaternion(4.214685e-08, -4.214686e-08, 0.7071068, 0.7071068)
 bones/4/rotation = Quaternion(0, 0, 0, 1)
+bones/5/position = Vector3(-9.5, 1.4999969, 22)
 bones/5/rotation = Quaternion(-0.5, 0.49999997, -0.5, 0.5000002)
 bones/6/rotation = Quaternion(0, -2.3432762e-24, 0, 1)
+bones/7/position = Vector3(1.9670097e-07, -1.9999968, 29.5)
 bones/7/rotation = Quaternion(-0.7071067, 0, 0, 0.7071068)
 bones/8/rotation = Quaternion(-0.7071067, 0, 0, 0.7071068)
 bones/9/rotation = Quaternion(-0.7071067, 0, 0, 0.7071068)
 bones/10/position = Vector3(10.000002, -60.471992, -3.7089996)
+bones/10/rotation = Quaternion(-0.7071068, 0, 0, 0.7071067)
 bones/11/position = Vector3(10.000002, -94.79076, -3.7089984)
 bones/11/rotation = Quaternion(1, 0, 0, 0)
 bones/12/position = Vector3(-10, -94.79076, -3.7089984)
 bones/12/rotation = Quaternion(1, 0, 0, 1.3315805e-07)
 bones/13/position = Vector3(-10, -60.471992, -3.7089996)
-
-[node name="Floor" parent="enemy/Sketchfab_model/fbx_merge_fbx/Object_2/RootNode" index="1"]
-visible = false
+bones/13/rotation = Quaternion(-0.7071068, 0, 0, 0.7071067)
 
 [editable path="Monster"]
 [editable path="yol1"]
@@ -1377,4 +1383,4 @@ visible = false
 [editable path="cooler"]
 [editable path="homey"]
 [editable path="tap"]
-[editable path="enemy"]
+[editable path="enemy/monster"]
