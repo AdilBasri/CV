@@ -86,8 +86,8 @@ func setup_headlights():
 		
 	# Find and configure all 4 child SpotLight3D nodes added under Volvo in the scene editor
 	var spotlights = []
-	for name in ["SpotLight3D", "SpotLight3D2", "SpotLight3D3", "SpotLight3D4"]:
-		var l = volvo.get_node_or_null(name)
+	for spot_name in ["SpotLight3D", "SpotLight3D2", "SpotLight3D3", "SpotLight3D4"]:
+		var l = volvo.get_node_or_null(spot_name)
 		if l and l is SpotLight3D:
 			spotlights.append(l)
 			
@@ -108,7 +108,7 @@ func setup_headlights():
 func setup_csg_materials():
 	csg_material = StandardMaterial3D.new()
 	csg_material.roughness = 0.85 # High roughness (0.8 - 0.9) to scatter headlight glow softly
-	csg_material.specular = 0.1   # Low specular to avoid mirror-like night highlights
+	csg_material.metallic = 0.0   # No metallic, low reflectivity
 	csg_material.albedo_color = Color(0.08, 0.06, 0.12, 1.0)
 	
 	# Apply dynamically to all CSGBoxes in scene
@@ -166,9 +166,18 @@ func setup_road_scroller():
 			var scroller_script = load("res://road_scroller.gd")
 			if scroller_script:
 				road_node.set_script(scroller_script)
-				# Call ready to initialize material duplication
-				road_node._ready()
-				print("Attached road_scroller.gd dynamically to road mesh node: ", road_node.name)
+		if road_node.mesh:
+			var src_mesh = road_node.mesh
+			var new_mesh = ArrayMesh.new()
+			for i in src_mesh.get_surface_count():
+				var st = SurfaceTool.new()
+				st.create_from(src_mesh, i) # use mesh and surface index
+				st.generate_tangents()
+				new_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, st.commit_to_arrays())
+			road_node.mesh = new_mesh
+		# Call ready to initialize material duplication
+		road_node._ready()
+		print("Attached road_scroller.gd with generated tangents for: ", road_node.name)
 
 func setup_audio():
 	# Dynamic WAV generation for clean, dependency-free menu sounds
@@ -619,22 +628,75 @@ func toggle_fullscreen():
 func _on_play_pressed():
 	play_click_sfx()
 	main_menu_container.visible = false
-	
-	# Smooth fade-out before opening world scene
+
+	# Fade to black over 2 seconds
 	var fade = ColorRect.new()
-	fade.color = Color(0, 0, 0, 0)
+	fade.color = Color(0,0,0,0)
 	fade.anchor_left = 0.0
 	fade.anchor_top = 0.0
 	fade.anchor_right = 1.0
 	fade.anchor_bottom = 1.0
 	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fade_layer.add_child(fade)
-	
+
 	var tween = create_tween()
-	tween.tween_property(fade, "color", Color(0, 0, 0, 1.0), 0.75)
+	tween.tween_property(fade, "color", Color(0,0,0,1), 2.0)
 	await tween.finished
+
+	# Play entrance audio
+	var entrance_audio = AudioStreamPlayer.new()
+	entrance_audio.name = "EntranceAudio"
+	entrance_audio.stream = load("res://enterence_sound.mp3")
+	add_child(entrance_audio)
+	entrance_audio.play()
+
+	# Subtitle label (center-bottom)
+	var subtitle = RichTextLabel.new()
+	subtitle.bbcode_enabled = true
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD
+	subtitle.visible_ratio = 1.0
+	subtitle.fit_content = true
+	subtitle.custom_minimum_size = Vector2(800, 100)
+	subtitle.custom_minimum_size = Vector2(900, 120)
+	subtitle.anchor_left = 0.5
+	subtitle.anchor_top = 1.0
+	subtitle.anchor_right = 0.5
+	subtitle.anchor_bottom = 1.0
+	subtitle.offset_left = -450
+	subtitle.offset_right = 450
+	subtitle.offset_bottom = -30
+	subtitle.offset_top = -130
+	subtitle.add_theme_font_size_override("normal_font_size", 14)
+	subtitle.add_theme_color_override("default_color", Color(1,1,1))
+	fade_layer.add_child(subtitle)
+
+	var lines = [
+		{"text":"[center]Yeah, I know, I know I'm running late for the interview. I'm really sorry.[/center]", "duration":6},
+		{"text":"[center]Look, my GPS just completely died on me.[/center]", "duration":3},
+		{"text":"[center]I took a wrong turn somewhere off the main highway.[/center]", "duration":2},
+		{"text":"[center]and now I'm stuck on this...[/center]", "duration":2},
+		{"text":"[center]this awful dirt road in the middle of nowhere.[/center]", "duration":4},
+		{"text":"[center]My car is acting up too, engine sounds terrible.[/center]", "duration":5},
+		{"text":"[center]I really can't afford to break down out here.[/center]", "duration":3},
+		{"text":"[center]Wait... hold on. I see some lights up ahead. Looks like an old house.[/center]", "duration":7},
+		{"text":"[center]I'm gonna pull over and see if they can point me to the nearest gas station.[/center]", "duration":4},
+		{"text":"[center]or at least let me use a landline.[/center]", "duration":4},
+		{"text":"[center]I'll call you back as soon as I can. Wish me luck.[/center]", "duration":6}
+	]
+
+	var elapsed = 0.0
+	for entry in lines:
+		subtitle.clear()
+		subtitle.append_text(entry.text)
 	
+		await get_tree().create_timer(entry.duration).timeout
+		elapsed += entry.duration
+
+	# After subtitles, short pause before scene change
+	await get_tree().create_timer(1.0).timeout
+	# Transition to world scene
 	get_tree().change_scene_to_file("res://world.tscn")
+
 
 func _on_options_pressed():
 	play_click_sfx()
