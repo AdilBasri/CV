@@ -2151,12 +2151,4 @@ var localization_data = {
 			"[center][font_size=32][wave amp=30 freq=3][shake rate=20 level=8][color=#ef4444][i]¡GRACIAS POR JUGAR![/i][/color][/shake][/wave][/font_size][/center]"
 		]
 	}
-}na salida.",
-			"INTERRED.",
-			"Una macabra mezcla de tácticas similares al ajedrez y terror rogue-lite.",
-			"Una demostración jugable acecha actualmente en Steam. Es completamente gratis.",
-			"Esta oscura creación se mantiene viva y evoluciona únicamente gracias al apoyo y la retroalimentación de sus jugadores. Deberías considerar seriamente apoyar al equipo.",
-			"Si disfrutaste de la retorcida atmósfera de este pequeño CV interactivo... te sentirás como en casa con INTERRED."
-		]
-	}
 }
