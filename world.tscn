@@ -1352,7 +1352,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8600593, 0, -27.76998)
 [node name="enemy" type="Node3D" parent="."]
 
 [node name="monster" parent="enemy" instance=ExtResource("34_6ah6f")]
-transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -14.22, 40.772, -20.919)
 
 [node name="Skeleton3D" parent="enemy/monster/Sketchfab_model/fbx_merge_fbx/Object_2/RootNode/Sign-Root/Object_5" index="0"]
 bones/1/position = Vector3(-4.37114e-08, -44.30484, -3.8146973e-06)

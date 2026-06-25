@@ -237,6 +237,15 @@ func setup_climax_elements():
 	# 3. Configure the enemy node
 	var enemy_node = get_node_or_null("enemy")
 	if enemy_node:
+		var monster_node = enemy_node.get_node_or_null("monster")
+		if monster_node:
+			# Programmatically align the parent enemy_node to the monster's horizontal start position,
+			# and keep only the necessary vertical offset on the monster node to fix the FBX height issue.
+			var target_spawn_pos = Vector3(monster_node.position.x, 0.0, monster_node.position.z)
+			enemy_node.position = target_spawn_pos
+			monster_node.position = Vector3(0.0, monster_node.position.y, 0.0)
+			print("Aligned enemy_node to spawn position: ", target_spawn_pos)
+			
 		enemy_node.visible = false
 		enemy_node.set_script(load("res://enemy.gd"))
 		enemy_node.set_physics_process(true)
@@ -1541,8 +1550,6 @@ func start_climax_sequence():
 		cinematic_cam1.current = true
 		
 	if enemy_node:
-		if enemy_spawn:
-			enemy_node.global_position = enemy_spawn.global_position
 		enemy_node.visible = true
 		
 	# 3. Aydınlanma (Fade in)
