@@ -681,11 +681,14 @@ func setup_options_panel():
 			Vector2i(1920, 1080)
 		]
 		var res = resolutions[current_resolution_idx]
-		DisplayServer.window_set_size(res)
-		if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN and DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_FULLSCREEN:
+		var is_fs = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN or DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		if not is_fs:
+			DisplayServer.window_set_size(res)
 			var screen_id = DisplayServer.window_get_current_screen()
 			var screen_size = DisplayServer.screen_get_size(screen_id)
 			DisplayServer.window_set_position((screen_size - res) / 2)
+		else:
+			get_viewport().size = res
 		update_video_labels()
 		save_settings()
 	)
@@ -1021,7 +1024,11 @@ func _on_play_pressed():
 	fade.anchor_top = 0.0
 	fade.anchor_right = 1.0
 	fade.anchor_bottom = 1.0
-	fade.size = Vector2(640, 480)
+	fade.size = get_viewport().size
+	get_viewport().size_changed.connect(func():
+		if is_instance_valid(fade):
+			fade.size = get_viewport().size
+	)
 	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fade_layer.add_child(fade)
 	
@@ -1391,11 +1398,13 @@ func load_settings():
 		]
 		if current_resolution_idx >= 0 and current_resolution_idx < resolutions.size():
 			var res = resolutions[current_resolution_idx]
-			DisplayServer.window_set_size(res)
 			if not is_fs:
+				DisplayServer.window_set_size(res)
 				var screen_id = DisplayServer.window_get_current_screen()
 				var screen_size = DisplayServer.screen_get_size(screen_id)
 				DisplayServer.window_set_position((screen_size - res) / 2)
+			else:
+				get_viewport().size = res
 				
 		var shader_intensity = config.get_value("video", "shader_intensity", 1.0)
 		if shader_intensity_slider: shader_intensity_slider.value = shader_intensity

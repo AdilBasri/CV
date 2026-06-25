@@ -450,7 +450,11 @@ func setup_ps2_screen_shader():
 	color_rect.offset_top = 0
 	color_rect.offset_right = 0
 	color_rect.offset_bottom = 0
-	color_rect.size = Vector2(640, 480)
+	color_rect.size = get_viewport().size
+	get_viewport().size_changed.connect(func():
+		if is_instance_valid(color_rect):
+			color_rect.size = get_viewport().size
+	)
 	color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas_layer.add_child(color_rect)
 	
@@ -609,7 +613,11 @@ func setup_volvo_mask_viewport():
 	# Create SubViewport
 	mask_viewport = SubViewport.new()
 	mask_viewport.name = "MaskViewport"
-	mask_viewport.size = Vector2i(640, 480) # Match 640x480 project viewport resolution
+	mask_viewport.size = get_viewport().size
+	get_viewport().size_changed.connect(func():
+		if is_instance_valid(mask_viewport):
+			mask_viewport.size = get_viewport().size
+	)
 	mask_viewport.transparent_bg = true
 	mask_viewport.handle_input_locally = false
 	mask_viewport.gui_disable_input = true
@@ -669,7 +677,15 @@ func setup_ui():
 	
 	interact_prompt.custom_minimum_size = Vector2(640, 40)
 	interact_prompt.size = Vector2(640, 40)
-	interact_prompt.position = Vector2(0, 420)
+	interact_prompt.anchor_left = 0.5
+	interact_prompt.anchor_top = 1.0
+	interact_prompt.anchor_right = 0.5
+	interact_prompt.anchor_bottom = 1.0
+	interact_prompt.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	interact_prompt.offset_left = -320
+	interact_prompt.offset_right = 320
+	interact_prompt.offset_top = -60
+	interact_prompt.offset_bottom = -20
 	interact_prompt.visible = false
 	ui_layer.add_child(interact_prompt)
 	
@@ -678,7 +694,16 @@ func setup_ui():
 	dialogue_panel.name = "DialoguePanel"
 	dialogue_panel.visible = false
 	dialogue_panel.size = Vector2(580, 100)
-	dialogue_panel.position = Vector2(30, 350)
+	dialogue_panel.anchor_left = 0.5
+	dialogue_panel.anchor_top = 1.0
+	dialogue_panel.anchor_right = 0.5
+	dialogue_panel.anchor_bottom = 1.0
+	dialogue_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	dialogue_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	dialogue_panel.offset_left = -290
+	dialogue_panel.offset_right = 290
+	dialogue_panel.offset_top = -130
+	dialogue_panel.offset_bottom = -30
 	
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.04, 0.05, 0.08, 0.85) # Retro semi-transparent dark charcoal blue
@@ -736,7 +761,11 @@ func setup_ui():
 	fade_rect.offset_top = 0
 	fade_rect.offset_right = 0
 	fade_rect.offset_bottom = 0
-	fade_rect.size = Vector2(640, 480)
+	fade_rect.size = get_viewport().size
+	get_viewport().size_changed.connect(func():
+		if is_instance_valid(fade_rect):
+			fade_rect.size = get_viewport().size
+	)
 	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fade_layer.add_child(fade_rect)
 	
@@ -756,7 +785,16 @@ func setup_ui():
 	
 	warning_label.custom_minimum_size = Vector2(640, 60)
 	warning_label.size = Vector2(640, 60)
-	warning_label.position = Vector2(0, 210) # Centered vertically
+	warning_label.anchor_left = 0.5
+	warning_label.anchor_top = 0.5
+	warning_label.anchor_right = 0.5
+	warning_label.anchor_bottom = 0.5
+	warning_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	warning_label.grow_vertical = Control.GROW_DIRECTION_BOTH
+	warning_label.offset_left = -320
+	warning_label.offset_right = 320
+	warning_label.offset_top = -30
+	warning_label.offset_bottom = 30
 	warning_label.visible = false
 	ui_layer.add_child(warning_label)
 
@@ -1696,11 +1734,13 @@ func apply_settings_from_config():
 	]
 	if resolution_idx >= 0 and resolution_idx < resolutions.size():
 		var res = resolutions[resolution_idx]
-		DisplayServer.window_set_size(res)
 		if not fullscreen:
+			DisplayServer.window_set_size(res)
 			var screen_id = DisplayServer.window_get_current_screen()
 			var screen_size = DisplayServer.screen_get_size(screen_id)
 			DisplayServer.window_set_position((screen_size - res) / 2)
+		else:
+			get_viewport().size = res
 			
 	var shader_intensity = config.get_value("video", "shader_intensity", 1.0)
 	if ps2_material:
