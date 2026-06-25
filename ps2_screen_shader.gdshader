@@ -9,6 +9,8 @@ uniform float vignette_strength : hint_range(0.0, 1.0) = 0.35;  // Deep vignette
 uniform float noise_strength : hint_range(0.0, 0.1) = 0.022;    // Animated TV static noise
 uniform vec3 horror_tint = vec3(0.85, 0.92, 0.98);              // Colder, clinical blue-green horror tint
 uniform float barrel_distortion : hint_range(0.0, 0.3) = 0.14;   // CRT screen curvature strength (increased slightly)
+uniform int colorblind_mode = 0; // 0 = None, 1 = Protanopia, 2 = Deuteranopia, 3 = Tritanopia
+
 
 // Simple pseudorandom number generator for animated static noise
 float random(vec2 uv) {
@@ -74,6 +76,30 @@ void fragment() {
 			vec2 d = abs(SCREEN_UV - 0.5) * 2.0;
 			float vignette = 1.0 - dot(d, d) * vignette_strength;
 			color *= clamp(vignette, 0.0, 1.0);
+			
+			// Colorblind Simulation/Correction
+			if (colorblind_mode == 1) {
+				// Protanopia
+				color = vec3(
+					color.r * 0.567 + color.g * 0.433,
+					color.r * 0.558 + color.g * 0.442,
+					color.b * 0.242 + color.g * 0.758
+				);
+			} else if (colorblind_mode == 2) {
+				// Deuteranopia
+				color = vec3(
+					color.r * 0.625 + color.g * 0.375,
+					color.r * 0.700 + color.g * 0.300,
+					color.b * 0.300 + color.g * 0.700
+				);
+			} else if (colorblind_mode == 3) {
+				// Tritanopia
+				color = vec3(
+					color.r * 0.950 + color.g * 0.050,
+					color.r * 0.433 + color.g * 0.567,
+					color.b * 0.475 + color.g * 0.525
+				);
+			}
 			
 			COLOR = vec4(color, 1.0);
 		}

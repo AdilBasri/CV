@@ -55,6 +55,13 @@ func _ready():
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	visuals.visible = false # Hide visuals in first person
 	
+	# Load mouse sensitivity from settings config
+	var config = ConfigFile.new()
+	if config.load("user://settings.cfg") == OK:
+		var sens_factor = config.get_value("accessibility", "mouse_sensitivity", 1.0)
+		mouse_sensitivity = 0.002 * sens_factor
+		print("Player mouse sensitivity configured from settings: ", mouse_sensitivity)
+	
 	# Create dynamic container for torch
 	torch_container = Node3D.new()
 	torch_container.name = "TorchContainer"

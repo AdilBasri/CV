@@ -4,6 +4,12 @@ var mask_viewport: SubViewport = null
 var mask_camera: Camera3D = null
 
 # Dialogue & interaction state variables
+var subtitles_enabled = true
+var interact_car_text = "Interact with E for get in the car!"
+var chase_warning_text = "Run to car for your life!"
+var escape_message_text = "YOU MANAGED TO ESCAPE!"
+var narrative_credit_text = ""
+var dev_log_slides = []
 var dialogue_lines = [
 	"Good heavens, you're soaked to the bone! Out in this storm... It's freezing out there.",
 	"Forget about that piece of junk for now, son. The roads ahead are flooded... you're not going anywhere tonight.",
@@ -105,6 +111,8 @@ var interacted_cv_items: Array = []
 var is_chase_active = false
 var climax_triggered = false
 var is_escape_prompt_active = false
+var ps2_material: ShaderMaterial = null
+
 
 var heartbeat_sfx: AudioStreamPlayer = null
 var scratch_sfx: AudioStreamPlayer = null
@@ -142,9 +150,6 @@ var typewriter_sound_player: AudioStreamPlayer = null
 func _ready():
 	print("World script initialized. Setting up window and environment...")
 	
-	# Launch in fullscreen mode
-	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-	
 	# 1. Set up Volvo mask viewport first so the screen shader can use it
 	print("Setting up Volvo render mask...")
 	setup_volvo_mask_viewport()
@@ -179,27 +184,35 @@ func _ready():
 	setup_tap_material()
 	setup_ui()
 	setup_climax_elements()
+	
+	# Apply dynamic configuration and gameplay localization
+	apply_settings_from_config()
+	apply_gameplay_localization()
 
 func setup_climax_elements():
 	# 1. Initialize sfx players
 	heartbeat_sfx = AudioStreamPlayer.new()
 	heartbeat_sfx.name = "heartbeat_sfx"
 	heartbeat_sfx.stream = load("res://heartbeat.mp3")
+	heartbeat_sfx.bus = &"SFX"
 	add_child(heartbeat_sfx)
 	
 	scratch_sfx = AudioStreamPlayer.new()
 	scratch_sfx.name = "scratch_sfx"
 	scratch_sfx.stream = load("res://scratch.mp3")
+	scratch_sfx.bus = &"SFX"
 	add_child(scratch_sfx)
 	
 	walkey_sfx = AudioStreamPlayer.new()
 	walkey_sfx.name = "walkey_sfx"
 	walkey_sfx.stream = load("res://walkey.mp3")
+	walkey_sfx.bus = &"SFX"
 	add_child(walkey_sfx)
 	
 	horror_sfx = AudioStreamPlayer.new()
 	horror_sfx.name = "horror_sfx"
 	horror_sfx.stream = load("res://horror.mp3")
+	horror_sfx.bus = &"SFX"
 	add_child(horror_sfx)
 	
 	# 2. Add CV items to group "cv_item" programmatically
@@ -445,6 +458,7 @@ func setup_ps2_screen_shader():
 	if shader:
 		material.shader = shader
 		color_rect.material = material
+		ps2_material = material
 		
 		# Pass the MaskViewport texture to the screen shader to exclude the Volvo
 		if mask_viewport:
@@ -515,6 +529,7 @@ func setup_ambient_audio():
 		ambient_player = AudioStreamPlayer.new()
 		ambient_player.name = "AmbientAudioPlayer"
 		ambient_player.stream = stream
+		ambient_player.bus = &"Music"
 		add_child(ambient_player)
 		ambient_player.play()
 		print("Ambient audio 'night_sound.mp3' successfully started in loop.")
@@ -528,6 +543,7 @@ func setup_ambient_audio():
 		rain_player.name = "RainAudioPlayer"
 		rain_player.stream = rain_stream
 		rain_player.volume_db = -19.0 # Slightly increased from -25.0 for better atmospheric balance
+		rain_player.bus = &"Music"
 		add_child(rain_player)
 		rain_player.play()
 		print("Rain audio 'rain_sound.mp3' successfully started in loop at -19 dB.")
@@ -542,6 +558,7 @@ func setup_ambient_audio():
 		mumble_player.stream = mumble_stream
 		mumble_player.volume_db = 4.0
 		mumble_player.pitch_scale = 1.25
+		mumble_player.bus = &"Voice"
 		add_child(mumble_player)
 		print("Mumble audio 'mumble.mp3' successfully loaded with speed and volume adjustments.")
 		
@@ -551,6 +568,7 @@ func setup_ambient_audio():
 	typewriter_sound_player.name = "TypewriterSoundPlayer"
 	typewriter_sound_player.stream = click_stream
 	typewriter_sound_player.volume_db = -16.0
+	typewriter_sound_player.bus = &"Voice"
 	add_child(typewriter_sound_player)
 	
 	# 5. Load and configure notopen.mp3
@@ -562,6 +580,7 @@ func setup_ambient_audio():
 		if "loop" in notopen_stream:
 			notopen_stream.loop = false
 		notopen_player.volume_db = -5.0
+		notopen_player.bus = &"SFX"
 		add_child(notopen_player)
 		print("NotOpen audio 'notopen.mp3' successfully loaded.")
 		
@@ -571,17 +590,19 @@ func setup_ambient_audio():
 	keyboard_click_player.name = "KeyboardClickPlayer"
 	keyboard_click_player.stream = kb_stream
 	keyboard_click_player.volume_db = -12.0
+	keyboard_click_player.bus = &"SFX"
 	add_child(keyboard_click_player)
 	print("Procedural keyboard click audio player successfully loaded.")
 	
-	# 7. Generate and configure procedural computer seek/processing hum player
-	var hum_stream = generate_comp_hum_stream()
+	# 7. Generate and configure computer hum player
 	comp_hum_player = AudioStreamPlayer.new()
 	comp_hum_player.name = "CompHumPlayer"
-	comp_hum_player.stream = hum_stream
-	comp_hum_player.volume_db = -18.0
+	comp_hum_player.stream = generate_comp_hum_stream()
+	comp_hum_player.volume_db = -20.0
+	comp_hum_player.bus = &"SFX"
 	add_child(comp_hum_player)
-	print("Procedural computer processing hum player successfully loaded.")
+	comp_hum_player.play()
+	print("Procedural computer hum player successfully started.")
 
 func setup_volvo_mask_viewport():
 	# Create SubViewport
@@ -980,7 +1001,8 @@ func start_typewriter(text: String):
 	typewriter_active = true
 	if dialogue_label:
 		dialogue_label.text = ""
-		dialogue_label.visible = true
+		var is_spoken = not is_comp_interacting and not is_paint_interacting and not is_wolf_interacting and not is_table2_interacting and not is_poster_interacting
+		dialogue_label.visible = subtitles_enabled if is_spoken else true
 	if rich_text_label:
 		rich_text_label.visible = false
 		
@@ -1582,7 +1604,7 @@ func start_climax_sequence():
 		player_node.is_interacting = false
 		
 	if warning_label:
-		warning_label.text = "Run to car for your life!"
+		warning_label.text = chase_warning_text
 		warning_label.visible = true
 		
 	if horror_sfx:
@@ -1617,3 +1639,524 @@ func print_node_hierarchy(node: Node, indent: String = ""):
 	print(indent, "- ", node.name, " (", node.get_class(), ") | vis:", vis, " | scale:", scale_val, " | pos:", pos)
 	for child in node.get_children():
 		print_node_hierarchy(child, indent + "  ")
+
+func setup_audio_buses():
+	ensure_bus_exists("Master")
+	ensure_bus_exists("Music", "Master")
+	ensure_bus_exists("SFX", "Master")
+	ensure_bus_exists("Voice", "Master")
+
+func ensure_bus_exists(bus_name: String, send_to: String = ""):
+	var idx = AudioServer.get_bus_index(bus_name)
+	if idx == -1:
+		AudioServer.add_bus()
+		idx = AudioServer.get_bus_count() - 1
+		AudioServer.set_bus_name(idx, bus_name)
+	
+	if send_to != "":
+		var send_idx = AudioServer.get_bus_index(send_to)
+		if send_idx != -1:
+			AudioServer.set_bus_send(idx, send_to)
+
+func apply_settings_from_config():
+	setup_audio_buses()
+	
+	var config = ConfigFile.new()
+	if config.load("user://settings.cfg") != OK:
+		print("No settings file found or failed to load. Using defaults.")
+		return
+	
+	# Audio settings
+	var volume_master = config.get_value("audio", "master", 1.0)
+	var volume_music = config.get_value("audio", "music", 1.0)
+	var volume_sfx = config.get_value("audio", "sfx", 1.0)
+	var volume_voice = config.get_value("audio", "voice", 1.0)
+	
+	set_bus_volume("Master", volume_master)
+	set_bus_volume("Music", volume_music)
+	set_bus_volume("SFX", volume_sfx)
+	set_bus_volume("Voice", volume_voice)
+	
+	# Video settings
+	var fullscreen = config.get_value("video", "fullscreen", false)
+	if fullscreen:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		
+	var resolution_idx = config.get_value("video", "resolution", 4) # Default 1920x1080
+	var resolutions = [
+		Vector2i(640, 480),
+		Vector2i(800, 600),
+		Vector2i(1024, 768),
+		Vector2i(1280, 720),
+		Vector2i(1920, 1080)
+	]
+	if resolution_idx >= 0 and resolution_idx < resolutions.size():
+		var res = resolutions[resolution_idx]
+		DisplayServer.window_set_size(res)
+		if not fullscreen:
+			var screen_id = DisplayServer.window_get_current_screen()
+			var screen_size = DisplayServer.screen_get_size(screen_id)
+			DisplayServer.window_set_position((screen_size - res) / 2)
+			
+	var shader_intensity = config.get_value("video", "shader_intensity", 1.0)
+	if ps2_material:
+		ps2_material.set_shader_parameter("shader_intensity", shader_intensity)
+		
+	# Accessibility settings
+	var colorblind_mode = config.get_value("accessibility", "colorblind_mode", 0)
+	if ps2_material:
+		ps2_material.set_shader_parameter("colorblind_mode", colorblind_mode)
+		
+	subtitles_enabled = config.get_value("accessibility", "subtitles", true)
+
+func set_bus_volume(bus_name: String, volume_linear: float):
+	var idx = AudioServer.get_bus_index(bus_name)
+	if idx != -1:
+		var db = linear_to_db(volume_linear) if volume_linear > 0.0 else -80.0
+		AudioServer.set_bus_volume_db(idx, db)
+
+func apply_gameplay_localization():
+	var config = ConfigFile.new()
+	var locale = "en"
+	if config.load("user://settings.cfg") == OK:
+		locale = config.get_value("language", "locale", "en").to_lower()
+	
+	if not localization_data.has(locale):
+		locale = "en"
+		
+	var data = localization_data[locale]
+	dialogue_lines = data["dialogue_lines"]
+	dialogue_lines_2 = data["dialogue_lines_2"]
+	comp_dialogue_lines = data["comp_dialogue_lines"]
+	paint_dialogue_lines = data["paint_dialogue_lines"]
+	wolf_dialogue_lines = data["wolf_dialogue_lines"]
+	table2_dialogue_lines = data["table2_dialogue_lines"]
+	table2_links_bbcode = data["table2_links_bbcode"]
+	poster_dialogue_lines = data["poster_dialogue_lines"]
+	
+	# Chase & Escape Ending localizations
+	interact_car_text = data.get("interact_car", "Interact with E for get in the car!")
+	chase_warning_text = data.get("chase_warning", "Run to car for your life!")
+	escape_message_text = data.get("escape_message", "YOU MANAGED TO ESCAPE!")
+	narrative_credit_text = data.get("narrative_credits", "")
+	dev_log_slides = data.get("dev_log_slides", [])
+	
+	if interact_prompt:
+		interact_prompt.text = data.get("interact_default", "Interact by pressing the E key")
+		
+	print("Gameplay localization applied for locale: ", locale)
+
+var localization_data = {
+	"en": {
+		"dialogue_lines": [
+			"Good heavens, you're soaked to the bone! Out in this storm... It's freezing out there.",
+			"Forget about that piece of junk for now, son. The roads ahead are flooded... you're not going anywhere tonight.",
+			"I could never let a guest of mine stay out in rain like this. Why, it would be a crime.",
+			"Come now, step inside. The fire is roaring... Besides, we have so much to talk about."
+		],
+		"dialogue_lines_2": [
+			"Ah, the front door is acting up again, is it? Confounded thing... Don't even bother looking for a key, it wouldn't do you any good anyway.",
+			"I get locked out of my own home more often than I'd care to admit! Just poke around the back and find another way in. I'm sure you'll figure it out."
+		],
+		"comp_dialogue_lines": [
+			"A glowing text document is left open on the screen...",
+			"> Current project architecture: Godot.",
+			"> Executing entirely via GDScript.",
+			"> Note: JavaScript, TypeScript, and Python proficiencies available but unutilized in this instance.",
+			"> Previous engine experiences (Unity, GameMaker, UE5) logged and archived."
+		],
+		"paint_dialogue_lines": [
+			"You wipe a thin layer of dust off an old, framed photograph. Seven people are smiling in the picture.",
+			"Project: subtracker.",
+			"A dedicated team of seven, seamlessly led. The initiative dragged two local banks into its wake, and played a pivotal role in the exit of the project that followed.",
+			"Beyond the flawless code (JavaScript, Node.js) and the great camaraderie, the true catalyst was its aggressive marketing strategy...",
+			"...a strategy driven heavily by the founder, Adil Basri Erdem, and his background in International Trade and Finance."
+		],
+		"wolf_dialogue_lines": [
+			"You examine a bizarre collection gathered in the corner: a carved wolf figurine, worn-out playing cards, and heavy metallic tokens.",
+			"The archives of Team Husk. Five distinct IPs materialized over two relentless years of development.",
+			"The cards belong to 'Soul's Gambit', a dark roguelike deckbuilder. The tokens? Pieces for 'Glad To Feed You!', a macabre game of horror checkers.",
+			"Scattered geometric shapes hint at 'SPHENKS', a Tetris-like puzzle shifting between 2D and 3D dimensions...",
+			"...while a small, pixelated sketch reveals 'Chick: Going to The Chicken Land', a deceptive story-driven platformer.",
+			"Different genres, different mechanics. All crafted by the same hands."
+		],
+		"table2_dialogue_lines": [
+			"You step closer to the desk. Under the dim light of the lamp, an investigation board dominates the wall.",
+			"All the red strings and scattered notes connect to a single face in the center.",
+			"Subject: Adil Basri ERDEM.",
+			"A mastermind poised to pioneer a new era in the Turkish game industry. Especially in the realm of psychological horror.",
+			"The dossier on the desk contains his direct contact protocols. The host's voice echoes in your mind: 'You should reach out to him... before it's too late.'"
+		],
+		"table2_links_bbcode": "[center]\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/][color=#cc1111]ACCESS LINKEDIN ARCHIVE[/color][/url]\n\n[url=mailto:adilbasri06161@gmail.com][color=#cc1111]INITIATE DIRECT MAIL[/color][/url]\n\n[url=http://www.teamhusk.com.tr][color=#cc1111]INSPECT PORTFOLIO (TEAM HUSK)[/color][/url]\n\n[url=close][color=#777777]EXIT DOSSIER[/color][/url]\n[/center]",
+		"poster_dialogue_lines": [
+			"You stare at a large poster hanging exactly where an exit should have been.",
+			"INTERRED.",
+			"A macabre blend of chess-like tactics and rogue-lite horror.",
+			"A playable demo is currently lurking on Steam. It is completely free to experience.",
+			"This dark creation is kept alive and evolving solely through the support and feedback of its players. You should seriously consider supporting the team.",
+			"If you enjoyed the twisted atmosphere of this little interactive CV... you will feel right at home with INTERRED."
+		],
+		"interact_default": "Interact by pressing the E key",
+		"interact_car": "Interact with E for get in the car!",
+		"chase_warning": "Run to car for your life!",
+		"escape_message": "YOU MANAGED TO ESCAPE!",
+		"narrative_credits": "Despite his relentless efforts and countless sleepless nights,\nAdil Basri ERDEM has yet to secure his rightful place in the gaming industry.\n\nThe developer is still running from the 'little men' chasing him through small-scale projects.\nHe is willing to endure grueling hours and modest compensation just to grasp something much greater.\n\nBut he is within your reach.\n\nTalent always finds a way to reveal itself.\nForged iron shines brightest in the dark; you will easily spot him among the crowd.\n\nI don't know what the future holds for Adil Basri ERDEM... but I know YOU.\nAnd you wouldn't want to miss a chance like this.\n\n\n[color=#a7f3d0]--- INITIATE CONTACT PROTOCOLS ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]ACCESS LINKEDIN ARCHIVE[/url]\n\n[url=http://www.teamhusk.com.tr]TEAM HUSK PORTFOLIO[/url]\n\n[url=mailto:adilbasri06161@gmail.com]DIRECT MAIL COMMUNICATION[/url]",
+		"dev_log_slides": [
+			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- DEVELOPMENT LOG ---[/color][/shake][/wave][/center]",
+			"[center]Creative Director & Game Designer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Lead Programmer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Narrative Writer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]World Building & Level Design\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Voice Acting & Sound Design\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Atmosphere & Shader Engineering\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Enemy AI Architecture\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]QA Testing & Bug Survivor\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center][font_size=32][wave amp=30 freq=3][shake rate=20 level=8][color=#ef4444][i]THANKS TO YOU FOR PLAYING![/i][/color][/shake][/wave][/font_size][/center]"
+		]
+	},
+	"tr": {
+		"dialogue_lines": [
+			"Aman tanrım, sırılsıklamsın! Bu fırtınada dışarısı... Dışarısı buz kesiyor.",
+			"Şimdilik o hurdayı unut evlat. Önündeki yollar sular altında... Bu gece hiçbir yere gidemezsin.",
+			"Bir misafirimi böyle bir yağmurda asla dışarıda bırakamam. Bu resmen bir suç olurdu.",
+			"Hadi gel, içeri gir. Ateş gürül gürül yanıyor... Hem, konuşacak çok şeyimiz var."
+		],
+		"dialogue_lines_2": [
+			"Ah, ön kapı yine oyun oynuyor demek? Lanet şey... Anahtar aramakla hiç uğraşma, zaten bir işe yaramaz.",
+			"Kendi evimde kilitli kaldığım zamanlar itiraf etmek istediğimden çok daha fazladır! Arkadan dolanıp başka bir giriş bul. Eminim bir yolunu bulursun."
+		],
+		"comp_dialogue_lines": [
+			"Ekranda parlayan bir metin belgesi açık bırakılmış...",
+			"> Mevcut proje mimarisi: Godot.",
+			"> Tamamen GDScript aracılığıyla yürütülüyor.",
+			"> Not: JavaScript, TypeScript ve Python yetkinlikleri mevcut ancak bu örnekte kullanılmadı.",
+			"> Önceki motor deneyimleri (Unity, GameMaker, UE5) günlüğe kaydedildi ve arşivlendi."
+		],
+		"paint_dialogue_lines": [
+			"Eski, çerçeveli bir fotoğrafın üzerindeki ince toz tabakasını siliyorsun. Resimde yedi kişi gülümsüyor.",
+			"Proje: subtracker.",
+			"Kusursuz yönetilen yedi kişilik kararlı bir ekip. Girişim, iki yerel bankayı da peşinden sürükledi ve ardından gelen projenin çıkışında çok önemli bir rol oynadı.",
+			"Kusursuz kodun (JavaScript, Node.js) ve harika dostluğun ötesinde, gerçek katalizör agresif pazarlama stratejisiydi...",
+			"...kurucu Adil Basri Erdem ve onun Uluslararası Ticaret ve Finans geçmişi tarafından güçlü bir şekilde yönlendirilen bir strateji."
+		],
+		"wolf_dialogue_lines": [
+			"Köşede toplanmış tuhaf bir koleksiyonu inceliyorsun: oyulmuş bir kurt heykelciği, yıpranmış oyun kartları ve ağır metal jetonlar.",
+			"Team Husk arşivleri. İki amansız geliştirme yılı boyunca ortaya çıkan beş farklı fikri mülkiyet.",
+			"Kartlar, karanlık bir roguelike deste oluşturma oyunu olan 'Soul's Gambit'e ait. Jetonlar mı? Korku daması oyunu olan 'Glad To Feed You!' parçaları.",
+			"Dağınık geometrik şekiller, 2D ve 3D boyutlar arasında geçiş yapan Tetris benzeri bir bulmaca olan 'SPHENKS'e işaret ediyor...",
+			"...küçük, pikselli bir eskiz ise aldatıcı hikaye odaklı platform oyunu 'Chick: Going to The Chicken Land'i ortaya çıkarıyor.",
+			"Farklı türler, farklı mekanikler. Hepsi aynı ellerden çıktı."
+		],
+		"table2_dialogue_lines": [
+			"Masaya doğru yaklaşıyorsun. Lambanın loş ışığı altında, duvarda bir soruşturma panosu duruyor.",
+			"Tüm kırmızı ipler ve dağınık notlar merkezdeki tek bir yüze bağlanıyor.",
+			"Konu: Adil Basri ERDEM.",
+			"Türk oyun sektöründe yeni bir döneme öncülük etmeye hazır bir deha. Özellikle psikolojik korku alanında.",
+			"Masadaki dosya onun doğrudan iletişim bilgilerini içeriyor. Ev sahibinin sesi zihninde yankılanıyor: 'Çok geç olmadan... ona ulaşmalısın.'"
+		],
+		"table2_links_bbcode": "[center]\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/][color=#cc1111]LİNKEDİN ARŞİVİNE ERİŞ[/color][/url]\n\n[url=mailto:adilbasri06161@gmail.com][color=#cc1111]DOĞRUDAN E-POSTA GÖNDER[/color][/url]\n\n[url=http://www.teamhusk.com.tr][color=#cc1111]PORTFOLYOYU İNCELE (TEAM HUSK)[/color][/url]\n\n[url=close][color=#777777]DOSYADAN ÇIK[/color][/url]\n[/center]",
+		"poster_dialogue_lines": [
+			"Tam bir çıkış olması gereken yerde asılı duran büyük bir afişe bakıyorsun.",
+			"INTERRED.",
+			"Satranç benzeri taktiklerin ve rogue-lite korkunun ürpertici bir karışımı.",
+			"Oynanabilir bir demo şu anda Steam'de pusuda bekliyor. Deneyimlemesi tamamen ücretsiz.",
+			"Bu karanlık yaratım sadece oyuncuların desteği ve geri bildirimleriyle hayatta kalıyor ve gelişiyor. Ekibi desteklemeyi kesinlikle düşünmelisiniz.",
+			"Alişılagelmişin dışındaki bu küçük interaktif CV'nin çarpık atmosferinden keyif aldıysanız... INTERRED ile kendinizi evinizde hissedeceksiniz."
+		],
+		"interact_default": "E tuşuna basarak etkileşime geç",
+		"interact_car": "Arabaya binmek için E ile etkileşime geç!",
+		"chase_warning": "Hayatın için arabaya koş!",
+		"escape_message": "KAÇMAYI BAŞARDIN!",
+		"narrative_credits": "Aralıksız çabalarına ve sayısız uykusuz gecesine rağmen,\nAdil Basri ERDEM henüz oyun endüstrisinde hak ettiği yeri bulamadı.\n\nGeliştirici hala küçük projelerle kendisini kovalayan 'küçük adamlardan' kaçıyor.\nDaha büyük bir şeyi yakalamak için yorucu saatlere ve mütevazı ücretlere katlanmaya razı.\n\nAma o sizin erişebileceğiniz bir yerde.\n\nYetenek kendini göstermenin bir yolunu her zaman bulur.\nDövülmüş demir en çok karanlıkta parlar; onu kalabalık arasında kolayca fark edeceksiniz.\n\nAdil Basri ERDEM için geleceğin ne getireceğini bilmiyorum... ama SİZİ biliyorum.\nVe böyle bir fırsatı kaçırmak istemezsiniz.\n\n\n[color=#a7f3d0]--- İLETİŞİM PROTOKOLLERİNİ BAŞLAT ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]LINKEDIN ARŞİVİNE ERİŞ[/url]\n\n[url=http://www.teamhusk.com.tr]TEAM HUSK PORTFOLYOSU[/url]\n\n[url=mailto:adilbasri06161@gmail.com]DOĞRUDAN E-POSTA İLETİŞİMİ[/url]",
+		"dev_log_slides": [
+			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- GELİŞTİRME GÜNLÜĞÜ ---[/color][/shake][/wave][/center]",
+			"[center]Kreatif Direktör & Oyun Tasarımcısı\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Baş Programcı\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Hikaye Yazarı\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Dünya Oluşturma & Seviye Tasarımı\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Seslendirme & Ses Tasarımı\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Atmosfer & Shader Mühendisliği\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Düşman Yapay Zeka Mimarisi\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]QA Testi & Hata Savaşçısı\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center][font_size=32][wave amp=30 freq=3][shake rate=20 level=8][color=#ef4444][i]OYNADIĞINIZ İÇİN TEŞEKKÜRLER![/i][/color][/shake][/wave][/font_size][/center]"
+		]
+	},
+	"de": {
+		"dialogue_lines": [
+			"Lieber Himmel, du bist bis auf die Knochen durchnässt! Draußen in diesem Sturm... Es ist eiskalt da draußen.",
+			"Vergiss das Wrack für Erste, mein Sohn. Die Straßen da vorne sind überschwemmt... du fährst heute nirgendwo mehr hin.",
+			"Ich könnte niemals einen Gast von mir bei so einem Regen draußen stehen lassen. Das wäre ein Verbrechen.",
+			"Komm schon, geh rein. Das Feuer prasselt... Außerdem haben wir so viel zu besprechen."
+		],
+		"dialogue_lines_2": [
+			"Ah, die Vordertür macht wieder Probleme, was? Verflixtes Ding... Such gar nicht erst nach einem Schlüssel, das würde dir sowieso nichts nützen.",
+			"Ich werde öfter aus meinem eigenen Haus ausgesperrt, als ich zugeben möchte! Geh einfach nach hinten und finde einen anderen Weg hinein. Du wirst das schon herausfinden."
+		],
+		"comp_dialogue_lines": [
+			"Ein leuchtendes Textdokument bleibt auf dem Bildschirm geöffnet...",
+			"> Aktuelle Projektarchitektur: Godot.",
+			"> Ausführung komplett über GDScript.",
+			"> Hinweis: JavaScript-, TypeScript- und Python-Kenntnisse vorhanden, aber in diesem Fall ungenutzt.",
+			"> Frühere Engine-Erfahrungen (Unity, GameMaker, UE5) protokolliert und archiviert."
+		],
+		"paint_dialogue_lines": [
+			"Du wischst eine dünne Staubschicht von einem alten, gerahmten Foto. Sieben Menschen lächeln auf dem Bild.",
+			"Projekt: subtracker.",
+			"Ein engagiertes Team von sieben Personen, nahtlos geführt. Die Initiative zog zwei lokale Banken in ihren Bann und spielte eine entscheidende Rolle beim anschließenden Exit des Projekts.",
+			"Neben dem fehlerfreien Code (JavaScript, Node.js) und der großartigen Kameradschaft war der wahre Katalysator die aggressive Marketingstrategie...",
+			"...eine Strategie, die stark vom Gründer Adil Basri Erdem und seinem Hintergrund in internationalem Handel und Finanzen vorangetrieben wurde."
+		],
+		"wolf_dialogue_lines": [
+			"Du untersuchst eine bizarre Sammlung in der Ecke: eine geschnitzte Wolfsfigur, abgenutzte Spielkarten und schwere Metallmünzen.",
+			"Die Archive von Team Husk. Fünf verschiedene IPs entstanden in zwei unerbittlichen Jahren der Entwicklung.",
+			"Die Karten gehören zu 'Soul's Gambit', einem düsteren Roguelike-Deckbuilder. Die Münzen? Spielfiguren für 'Glad To Feed You!', einem makabren Horror-Damespiel.",
+			"Verstreute geometrische Formen deuten auf 'SPHENKS' hin, ein Tetris-ähnliches Puzzle, das sich zwischen 2D- und 3D-Dimensionen bewegt...",
+			"...während eine kleine, verpixelte Skizze 'Chick: Going to The Chicken Land' enthüllt, einen täuschenden, geschichtenbasierten Plattformer.",
+			"Verschiedene Genres, verschiedene Mechaniken. Alle von denselben Händen geschaffen."
+		],
+		"table2_dialogue_lines": [
+			"Du trittst näher an den Schreibtisch heran. Unter dem schwachen Licht der Lampe dominiert eine Ermittlungstafel die Wand.",
+			"Alle roten Fäden und verstreuten Notizen führen zu einem einzigen Gesicht in der Mitte.",
+			"Subjekt: Adil Basri ERDEM.",
+			"Ein Mastermind, der bereit ist, eine neue Ära in der türkischen Spielebranche einzuleiten. Besonders im Bereich des psychologischen Horrors.",
+			"Das Dossier auf dem Schreibtisch enthält seine direkten Kontaktprotokolle. Die Stimme des Gastgebers hallt in deinem Kopf wider: 'Du solltest dich an ihn wenden... bevor es zu spät ist.'"
+		],
+		"table2_links_bbcode": "[center]\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/][color=#cc1111]LINKEDIN-ARCHIV ÖFFNEN[/color][/url]\n\n[url=mailto:adilbasri06161@gmail.com][color=#cc1111]DIREKTE E-MAIL STARTEN[/color][/url]\n\n[url=http://www.teamhusk.com.tr][color=#cc1111]PORTFOLIO INSPEKTION (TEAM HUSK)[/color][/url]\n\n[url=close][color=#777777]DOSSIER SCHLIESSEN[/color][/url]\n[/center]",
+		"poster_dialogue_lines": [
+			"Du starrst auf ein großes Poster, das genau dort hängt, wo eigentlich ein Ausgang hätte sein sollen.",
+			"INTERRED.",
+			"Eine makabre Mischung aus schachähnlicher Taktik und Rogue-lite-Horror.",
+			"Eine spielbare Demo lauert derzeit auf Steam. Sie kann völlig kostenlos erlebt werden.",
+			"Diese dunkle Kreation wird ausschließlich durch die Unterstützung und das Feedback ihrer Spieler am Leben erhalten und weiterentwickelt. Du solltest ernsthaft überlegen, das Team zu unterstützen.",
+			"Wenn dir die düstere Atmosphäre dieses kleinen Lebenslaufs gefallen hat... wirst du dich bei INTERRED wie zu Hause fühlen."
+		],
+		"interact_default": "Drücke E zur Interaktion",
+		"interact_car": "Drücke E, um ins Auto einzusteigen!",
+		"chase_warning": "Lauf um dein Leben zum Auto!",
+		"escape_message": "DU HAST ES GESCHAFFT ZU ENTKOMMEN!",
+		"narrative_credits": "Trotz seiner unermüdlichen Bemühungen und unzähligen schlaflosen Nächte\nhat Adil Basri ERDEM seinen rechtmäßigen Platz in der Spieleindustrie noch nicht gefunden.\n\nDer Entwickler läuft immer noch vor den 'kleinen Männern' weg, die ihn durch kleine Projekte jagen.\nEr ist bereit, zermürbende Stunden und eine bescheidene Vergütung in Kauf zu nehmen, nur um nach etwas viel Größerem zu greifen.\n\nAber er ist in Ihrer Reichweite.\n\nTalent findet immer einen Weg, sich zu offenbaren.\nGeschmiedetes Eisen glänzt im Dunkeln am hellsten; Sie werden ihn leicht in der Menge erkennen.\n\nIch weiß nicht, was die Zukunft für Adil Basri ERDEM bereithält... aber ich kenne SIE.\nUnd Sie würden sich eine solche Gelegenheit nicht entgehen lassen wollen.\n\n\n[color=#a7f3d0]--- KONTAKTAUFNAHME STARTEN ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]LINKEDIN-ARCHIV ÖFFNEN[/url]\n\n[url=http://www.teamhusk.com.tr]TEAM HUSK PORTFOLIO[/url]\n\n[url=mailto:adilbasri06161@gmail.com]DIREKTE E-MAIL-KOMMUNIKATION[/url]",
+		"dev_log_slides": [
+			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- ENTWICKLUNGSPROTOKOLL ---[/color][/shake][/wave][/center]",
+			"[center]Creative Director & Game Designer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Chefprogrammierer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Drehbuchautor\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Weltgestaltung & Leveldesign\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Synchronsprecher & Sounddesign\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Atmosphäre & Shader-Entwicklung\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Gegner-KI-Architektur\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]QA-Tests & Bug-Überlebender\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center][font_size=32][wave amp=30 freq=3][shake rate=20 level=8][color=#ef4444][i]DANKE FÜRS SPIELEN![/i][/color][/shake][/wave][/font_size][/center]"
+		]
+	},
+	"it": {
+		"dialogue_lines": [
+			"Santo cielo, sei bagnato fino alle ossa! Fuori con questa tempesta... Si congela là fuori.",
+			"Dimentica quel rottame per ora, figliolo. Le strade davanti sono allagate... stasera non andrai da nessuna parte.",
+			"Non potrei mai lasciare un mio ospite fuori con una pioggia simile. Sarebbe un crimine.",
+			"Vieni, entra. Il fuoco scoppietta... E poi, abbiamo così tanto di cui parlare."
+		],
+		"dialogue_lines_2": [
+			"Ah, la porta d'ingresso fa di nuovo i capricci, vero? Maledetta cosa... Non perdere tempo a cercare una chiave, non ti servirebbe a nulla comunque.",
+			"Rimango chiuso fuori da casa mia più spesso di quanto vorrei ammettere! Fai un giro sul retro e trova un altro modo per entrare. Sono sicuro che ci riuscirai."
+		],
+		"comp_dialogue_lines": [
+			"Un documento di testo luminoso è rimasto aperto sullo schermo...",
+			"> Architettura del progetto corrente: Godot.",
+			"> Esecuzione interamente tramite GDScript.",
+			"> Nota: competenze in JavaScript, TypeScript e Python disponibili ma inutilizzate in questo caso.",
+			"> Esperienze precedenti con motori grafici (Unity, GameMaker, UE5) registrate e archiviate."
+		],
+		"paint_dialogue_lines": [
+			"Pulisci un sottile strato di polvere da una vecchia fotografia incorniciata. Sette persone sorridono nella foto.",
+			"Progetto: subtracker.",
+			"Un team dedicato di sette persone, guidato senza problemi. L'iniziativa ha coinvolto due banche locali e ha svolto un ruolo fondamentale nell'uscita del progetto che è seguito.",
+			"Oltre al codice impeccabile (JavaScript, Node.js) e alla grande solidarietà, il vero catalizzatore è stata la sua aggressiva strategia di marketing...",
+			"...una strategia fortemente guidata dal fondatore, Adil Basri Erdem, e dal suo background in Commercio Internazionale e Finanza."
+		],
+		"wolf_dialogue_lines": [
+			"Esamini una bizzarra collezione raccolta nell'angolo: una statuina di lupo intagliata, carte da gioco logore e pesanti gettoni metallici.",
+			"Gli archivi di Team Husk. Cinque diverse IP materializzate in due implacabili anni di sviluppo.",
+			"Le carte appartengono a 'Soul's Gambit', un oscuro deckbuilder roguelike. I gettoni? Pezzi per 'Glad To Feed You!', un macabro gioco di dama horror.",
+			"Forme geometriche sparse accennano a 'SPHENKS', un puzzle simile a Tetris che si sposta tra le dimensioni 2D e 3D...",
+			"...mentre un piccolo schizzo pixelato rivela 'Chick: Going to The Chicken Land', un ingannevole platform basato sulla storia.",
+			"Generi diversi, meccaniche diverse. Tutti creati dalle stesse mani."
+		],
+		"table2_dialogue_lines": [
+			"Ti avvicini alla scrivania. Sotto la luce fioca della lampada, una lavagna investigativa domina la parete.",
+			"Tutti i fili rossi e le note sparse si collegano a un unico volto al centro.",
+			"Soggetto: Adil Basri ERDEM.",
+			"Una mente pronta a fare da apripista a una nuova era nell'industria dei videogiochi turca. Specialmente nel regno dell'horror psicologico.",
+			"Il dossier sulla scrivania contiene i suoi protocolli di contatto diretto. La voce dell'ospite risuona nella tua mente: 'Dovresti metterti in contatto con lui... prima che sia troppo tardi.'"
+		],
+		"table2_links_bbcode": "[center]\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/][color=#cc1111]ACCEDI ALL'ARCHIVIO LINKEDIN[/color][/url]\n\n[url=mailto:adilbasri06161@gmail.com][color=#cc1111]INVIA EMAIL DIRETTA[/color][/url]\n\n[url=http://www.teamhusk.com.tr][color=#cc1111]ISPEZIONA IL PORTAFOGLIO (TEAM HUSK)[/color][/url]\n\n[url=close][color=#777777]ESCI DAL DOSSIER[/color][/url]\n[/center]",
+		"poster_dialogue_lines": [
+			"Fissi un grande poster appeso esattamente dove avrebbe dovuto esserci un'uscita.",
+			"INTERRED.",
+			"Una macabra miscela di tattiche scacchistiche e horror rogue-lite.",
+			"Una demo giocabile si trova attualmente su Steam. L'esperienza é completamente gratuita.",
+			"Questa oscura creazione è tenuta in vita e si evolve unicamente grazie al supporto e ai feedback dei suoi giocatori. Dovresti seriamente considerare di supportare il team.",
+			"Se ti è piaciuta la cupa atmosfera di questo piccolo CV interattivo... ti sentirai a casa con INTERRED."
+		],
+		"interact_default": "Interagisci premendo il tasto E",
+		"interact_car": "Interagisci con E per salire in macchina!",
+		"chase_warning": "Corri alla macchina per salvarti la vita!",
+		"escape_message": "SEI RIUSCITO A FUGGIRE!",
+		"narrative_credits": "Nonostante i suoi incessanti sforzi e le innumerevoli notti insonni,\nAdil Basri ERDEM non ha ancora assicurato il suo giusto posto nell'industria dei videogiochi.\n\nLo sviluppatore sta ancora fuggendo dai 'piccoli uomini' che lo inseguono attraverso progetti su piccola scala.\nÈ disposto a sopportare ore estenuanti e compensi modesti pur di afferrare qualcosa di molto più grande.\n\nMa è alla vostra portata.\n\nIl talento trova sempre un modo per rivelarsi.\nIl ferro battuto risplende di più nell'oscurità; lo individuerete facilmente tra la folla.\n\nNon so cosa riservi il futuro per Adil Basri ERDEM... ma conosco VOI.\nE non vorrete perdere un'occasione del genere.\n\n\n[color=#a7f3d0]--- INIZIA PROTOCOLLI DI CONTATTO ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]ACCEDI ALL'ARCHIVIO LINKEDIN[/url]\n\n[url=http://www.teamhusk.com.tr]PORTFOLIO TEAM HUSK[/url]\n\n[url=mailto:adilbasri06161@gmail.com]COMUNICAZIONE E-POSTA DIRETTA[/url]",
+		"dev_log_slides": [
+			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- LOG DI SVILUPPO ---[/color][/shake][/wave][/center]",
+			"[center]Direttore Creativo & Game Designer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Programmatore Capo\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Sceneggiatore\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]World Building & Level Design\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Doppiaggio & Sound Design\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Atmosferica & Ingegneria degli Shader\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Architettura dell'IA Nemica\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Test QA & Sopravvissuto ai Bug\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center][font_size=32][wave amp=30 freq=3][shake rate=20 level=8][color=#ef4444][i]GRAZIE PER AVER GIOCATO![/i][/color][/shake][/wave][/font_size][/center]"
+		]
+	},
+	"fr": {
+		"dialogue_lines": [
+			"Bon sang, vous êtes trempé jusqu'aux os ! Dehors dans cette tempête... Il fait un froid de canard.",
+			"Oublie ce tas de ferraille pour l'instant, mon fils. Les routes devant sont inondées... tu ne vas nulle part ce soir.",
+			"Je ne pourrais jamais laisser un de mes invités dehors sous une telle pluie. Ce serait un crime.",
+			"Allez, entrez. Le feu crépite... De plus, nous avons tant de choses à nous dire."
+		],
+		"dialogue_lines_2": [
+			"Ah, la porte d'entrée fait encore des siennes, n'est-ce pas ? Sacrée machine... Ne t'embête même pas à chercher une clé, cela ne te servirait à rien de toute façon.",
+			"Je me retrouve enfermé dehors de chez moi plus souvent que je ne voudrais l'admettre ! Fais le tour par l'arrière et trouve une autre entrée. Je suis sûr que tu vas trouver."
+		],
+		"comp_dialogue_lines": [
+			"Un document texte lumineux est laissé ouvert sur l'écran...",
+			"> Architecture actuelle du projet: Godot.",
+			"> Exécution entièrement via GDScript.",
+			"> Note: compétences en JavaScript, TypeScript et Python disponibles mais inutilisées dans ce cas.",
+			"> Expériences précédentes avec d'autres moteurs (Unity, GameMaker, UE5) enregistrées et archivées."
+		],
+		"paint_dialogue_lines": [
+			"Vous essuyez une fine couche de poussière sur une vieille photo encadrée. Sept personnes sourient sur la photo.",
+			"Projet: subtracker.",
+			"Une équipe dédiée de sept personnes, dirigée de main de maître. L'initiative a entraîné deux banques locales dans son sillage et a joué un rôle charnière dans la sortie du projet qui a suivi.",
+			"Au-delà du code impeccable (JavaScript, Node.js) et de la grande camaraderie, le véritable catalyseur a été son agressive stratégie marketing...",
+			"...une stratégie fortement menée par le fondateur, Adil Basri Erdem, et son parcours en commerce international et finance."
+		],
+		"wolf_dialogue_lines": [
+			"Vous examinez une étrange collection rassemblée dans le coin: une figurine de loup sculptée, des cartes à jouer usées et de lourds jetons métalliques.",
+			"Les archives de Team Husk. Cinq licences distinctes matérialisées en deux années de développement acharné.",
+			"Les cartes appartiennent à 'Soul's Gambit', un deckbuilder roguelike sombre. Les jetons ? Des pièces pour 'Glad To Feed You !', un jeu macabre de dames d'horreur.",
+			"Des formes géométriques dispersées font penser à 'SPHENKS', un puzzle de type Tetris alternant entre les dimensions 2D et 3D...",
+			"...tandis qu'un petit croquis pixelisé révèle 'Chick: Going to The Chicken Land', un jeu de plateforme trompeur axé sur l'histoire.",
+			"Différents genres, différentes mécaniques. Tous créés par les mêmes mains."
+		],
+		"table2_dialogue_lines": [
+			"Vous vous approchez du bureau. Sous la faible lumière de la lampe, un tableau d'investigation domine le mur.",
+			"Tous les fils rouges et les notes éparpillées mènent à un seul visage au centre.",
+			"Sujet: Adil Basri ERDEM.",
+			"Un cerveau prêt à ouvrir une nouvelle ére dans l'industrie du jeu vidéo turque. Particulièrement dans le domaine de l'horreur psychologique.",
+			"Le dossier sur le bureau contient ses protocoles de contact direct. La voix de l'hôte résonne dans votre esprit: 'Vous devriez le contacter... avant qu'il ne soit trop tard.'"
+		],
+		"table2_links_bbcode": "[center]\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/][color=#cc1111]ACCÉDER AUX ARCHIVES LINKEDIN[/color][/url]\n\n[url=mailto:adilbasri06161@gmail.com][color=#cc1111]INITIER UN MESSAGE DIRECT[/color][/url]\n\n[url=http://www.teamhusk.com.tr][color=#cc1111]INSPECTER LE PORTFOLIO (TEAM HUSK)[/color][/url]\n\n[url=close][color=#777777]FERMER LE DOSSIER[/color][/url]\n[/center]",
+		"poster_dialogue_lines": [
+			"Vous fixez un grand poster suspendu exactement là où une sortie aurait dû se trouver.",
+			"INTERRED.",
+			"Un mélange macabre de tactique inspirée des échecs et d'horreur rogue-lite.",
+			"Une démo jouable est actuellement disponible sur Steam. L'expérience est entièrement gratuite.",
+			"Cette sombre création est maintenue en vie et évolue uniquement grâce au soutien et aux retours de ses joueurs. Vous devriez sérieusement envisager de soutenir l'équipe.",
+			"Si vous avez aimé l'atmosphère tordue de ce petit CV interactif... vous vous sentirez chez vous avec INTERRED."
+		],
+		"interact_default": "Interagir en appuyant sur la touche E",
+		"interact_car": "Interagir avec E pour monter dans la voiture !",
+		"chase_warning": "Cours vers la voiture pour sauver ta vie !",
+		"escape_message": "TU AS RÉUSSI À T'ÉCHAPPER !",
+		"narrative_credits": "Malgré ses efforts incessants et ses innombrables nuits blanches,\nAdil Basri ERDEM n'a pas encore trouvé sa juste place dans l'industrie du jeu vidéo.\n\nLe développeur fuit toujours les 'petits hommes' qui le poursuivent à travers des micro-projets.\nIl est prêt à endurer des heures exténuantes et une rémunération modeste pour saisir quelque chose de bien plus grand.\n\nMais il est à votre portée.\n\nLe talent trouve toujours un moyen de se révéler.\nLe fer forgé brille plus fort dans l'obscurité ; vous le repérerez facilement dans la foule.\n\nJe ne sais pas ce que l'avenir réserve à Adil Basri ERDEM... mais je VOUS connais.\nEt vous ne voudriez pas rater une telle opportunité.\n\n\n[color=#a7f3d0]--- INITIALISER LE PROTOCOLE DE CONTACT ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]ACCÉDER AUX ARCHIVES LINKEDIN[/url]\n\n[url=http://www.teamhusk.com.tr]PORTFOLIO TEAM HUSK[/url]\n\n[url=mailto:adilbasri06161@gmail.com]COMMUNICATION E-MAIL DIRECTE[/url]",
+		"dev_log_slides": [
+			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- LOG DE DÉVELOPPEMENT ---[/color][/shake][/wave][/center]",
+			"[center]Directeur Artistique & Concepteur\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Programmeur Principal\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Scénariste\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]World Building & Level Design\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Doublage & Sound Design\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Atmosphère & Shader Engineering\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Architecture IA Ennemie\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Tests QA & Survivant des Bugs\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center][font_size=32][wave amp=30 freq=3][shake rate=20 level=8][color=#ef4444][i]MERCI D'AVOIR JOUÉ ![/i][/color][/shake][/wave][/font_size][/center]"
+		]
+	},
+	"es": {
+		"dialogue_lines": [
+			"¡Cielo santo, estás empapado hasta los huesos! Fuera con esta tormenta... Hace un frío glacial.",
+			"Olvídate de esa chatarra por ahora, hijo. Los caminos más adelante están inundados... no vas a ir a ningún lado esta noche.",
+			"Jamás dejaría que un invitado mío se quedara fuera con una lluvia como esta. Sería un crimen.",
+			"Vamos, entra. El fuego está rugiendo... Además, tenemos mucho de qué hablar."
+		],
+		"dialogue_lines_2": [
+			"Ah, ¿la puerta principal vuelve a dar problemas, verdad? Maldita sea... No te molestes en buscar una llave, no te serviría de nada de todos modos.",
+			"¡Me quedo fuera de mi propia casa más a menudo de lo que me gustaría admitir! Da una vuelta por detrás y busca otra entrada. Estoy seguro de que lo resolverás."
+		],
+		"comp_dialogue_lines": [
+			"Un documento de texto brillante queda abierto en la pantalla...",
+			"> Arquitectura del proyecto actual: Godot.",
+			"> Ejecución íntegramente mediante GDScript.",
+			"> Nota: conocimientos de JavaScript, TypeScript y Python disponibles pero no utilizados en este caso.",
+			"> Experiencias previas con otros motores (Unity, GameMaker, UE5) registradas y archivadas."
+		],
+		"paint_dialogue_lines": [
+			"Limpias una fina capa de polvo de una vieja fotografía enmarcada. Siete personas sonreían en la imagen.",
+			"Proyecto: subtracker.",
+			"Un equipo dedicado de siete personas, dirigido sin problemas. La iniciativa arrastró a dos bancos locales tras de sí y jugó un papel fundamental en la posterior salida del proyecto.",
+			"Más allá del código impecable (JavaScript, Node.js) y el gran compañerismo, el verdadero catalizador fue su agresiva estrategia de marketing...",
+			"...una estrategia impulsada principalmente por el fundador, Adil Basri Erdem, y su experiencia en Comercio Internacional y Finanzas."
+		],
+		"wolf_dialogue_lines": [
+			"Examinas una extraña colección reunida en la esquina: una figura de lobo tallada, cartas gastadas y pesadas fichas metálicas.",
+			"Los archivos de Team Husk. Cinco propiedades intelectuales distintas materializadas en dos implacables años de desarrollo.",
+			"Las cartas pertenecen a 'Soul's Gambit', un oscuro creador de mazos roguelike. ¿Las fichas? Piezas para 'Glad To Feed You!', un macabro juego de damas de terror.",
+			"Formas geométricas dispersas sugieren 'SPHENKS', un rompecabezas similar al Tetris que cambia entre dimensiones 2D y 3D...",
+			"...mientras que un pequeño boceto pixelado revela 'Chick: Going to The Chicken Land', un engañoso juego de plataformas basado en la historia.",
+			"Diferentes géneros, diferentes mecánicas. Todos creados por las mismas manos."
+		],
+		"table2_dialogue_lines": [
+			"Te acercas al escritorio. Bajo la tenue luz de la lámpara, un tablero de investigación domina la pared.",
+			"Todos los hilos rojos y las notas dispersas se conectan a un solo rostro en el centro.",
+			"Sujeto: Adil Basri ERDEM.",
+			"Una mente maestra dispuesta a liderar una nueva era en la industria del videojuego turca. Especialmente en el ámbito del terror psicológico.",
+			"El dossier en el escritorio contiene sus protocolos de contacto directo. La voz del anfitrión resuena en tu mente: 'Deberías ponerte en contacto con él... antes de que sea demasiado tarde.'"
+		],
+		"table2_links_bbcode": "[center]\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/][color=#cc1111]ACCEDER AL ARCHIVO DE LINKEDIN[/color][/url]\n\n[url=mailto:adilbasri06161@gmail.com][color=#cc1111]INICIAR CORREO DIRECTO[/color][/url]\n\n[url=http://www.teamhusk.com.tr][color=#cc1111]INSPECCIONAR PORTAFOLIO (TEAM HUSK)[/color][/url]\n\n[url=close][color=#777777]SALIR DEL DOSSIER[/color][/url]\n[/center]",
+		"poster_dialogue_lines": [
+			"Te quedas mirando un gran cartel colgado exactamente donde debería haber estado una salida.",
+			"INTERRED.",
+			"Una macabra mezcla de tácticas similares al ajedrez y terror rogue-lite.",
+			"Una demostración jugable acecha actualmente en Steam. Es completamente gratis.",
+			"Esta oscura creación se mantiene viva y evoluciona únicamente gracias al apoyo y la retroalimentación de sus jugadores. Deberías considerar seriamente apoyar al equipo.",
+			"Si disfrutaste de la retorcida atmósfera de este pequeño CV interactivo... te sentirás como en casa con INTERRED."
+		],
+		"interact_default": "Interactúa presionando la tecla E",
+		"interact_car": "¡Interactúa con E para entrar al coche!",
+		"chase_warning": "¡Corre al coche para salvar tu vida!",
+		"escape_message": "¡LOGRASTE ESCAPAR!",
+		"narrative_credits": "A pesar de sus incansables esfuerzos e innumerables noches de insomnio,\nAdil Basri ERDEM aún no ha asegurado el lugar que le corresponde en la industria de los videojuegos.\n\nEl desarrollador sigue huyendo de los 'hombres pequeños' que lo persiguen a través de proyectos a pequeña escala.\nEstá dispuesto a soportar jornadas agotadoras y una compensación modesta solo por alcanzar algo mucho mayor.\n\nMiembro de la comunidad dentro de tu alcance.\n\nEl talento siempre encuentra la manera de revelarse.\nEl hierro forjado brilla con más fuerza en la oscuridad; lo identificarás fácilmente entre la multitud.\n\nNo sé qué depara el futuro para Adil Basri ERDEM... pero te conozco a TI.\nY no querrás perder una oportunidad como esta.\n\n\n[color=#a7f3d0]--- INICIAR PROTOCOLOS DE CONTACTO ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]ACCEDER AL ARCHIVO DE LINKEDIN[/url]\n\n[url=http://www.teamhusk.com.tr]PORTAFOLIO TEAM HUSK[/url]\n\n[url=mailto:adilbasri06161@gmail.com]CORREO DIRECTO[/url]",
+		"dev_log_slides": [
+			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- REGISTRO DE DESARROLLO ---[/color][/shake][/wave][/center]",
+			"[center]Director Creativo y Diseñador\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Programador Principal\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Guionista\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Construcción del Mundo y Diseño de Niveles\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Actuación de Voz y Diseño de Sonido\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Atmósfera e Ingeniería de Shaders\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Arquitectura de la IA Enemiga\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Pruebas de Control de Calidad y Sobreviviente de Bugs\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center][font_size=32][wave amp=30 freq=3][shake rate=20 level=8][color=#ef4444][i]¡GRACIAS POR JUGAR![/i][/color][/shake][/wave][/font_size][/center]"
+		]
+	}
+}na salida.",
+			"INTERRED.",
+			"Una macabra mezcla de tácticas similares al ajedrez y terror rogue-lite.",
+			"Una demostración jugable acecha actualmente en Steam. Es completamente gratis.",
+			"Esta oscura creación se mantiene viva y evoluciona únicamente gracias al apoyo y la retroalimentación de sus jugadores. Deberías considerar seriamente apoyar al equipo.",
+			"Si disfrutaste de la retorcida atmósfera de este pequeño CV interactivo... te sentirás como en casa con INTERRED."
+		]
+	}
+}

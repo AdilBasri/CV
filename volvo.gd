@@ -142,7 +142,10 @@ func update_escape_state():
 			can_escape = true
 			world.is_escape_prompt_active = true
 			if world.interact_prompt:
-				world.interact_prompt.text = "Interact with E for get in the car!"
+				if world.interact_car_text:
+					world.interact_prompt.text = world.interact_car_text
+				else:
+					world.interact_prompt.text = "Interact with E for get in the car!"
 				world.interact_prompt.visible = true
 			print("Volvo escape prompt shown.")
 	else:
@@ -223,6 +226,10 @@ func trigger_escape_ending():
 	
 	# 5. Display escape message (typewriter with violent shake effect)
 	if escape_label:
+		var esc_text = "YOU MANAGED TO ESCAPE!"
+		if world and world.escape_message_text:
+			esc_text = world.escape_message_text
+		escape_label.text = "[center][shake rate=25 level=12][font_size=32][color=#ffffff]" + esc_text + "[/color][/font_size][/shake][/center]"
 		escape_label.visible = true
 		escape_label.visible_characters = 0
 		var total_escape_chars = escape_label.get_parsed_text().length()
@@ -230,7 +237,7 @@ func trigger_escape_ending():
 			escape_label.visible_characters += 1
 			play_typing_sfx()
 			await get_tree().create_timer(0.04).timeout
-		print("YOU MANAGED TO ESCAPE label fully written.")
+		print("Escape message label fully written.")
 		
 	# 6. Wait 3.0 seconds
 	await get_tree().create_timer(3.0).timeout
@@ -238,7 +245,11 @@ func trigger_escape_ending():
 		escape_label.visible = false
 		
 	# 7. Start slow Credits narrative crawl (Part 1)
-	var narrative_text = "Despite his relentless efforts and countless sleepless nights,\nAdil Basri ERDEM has yet to secure his rightful place in the gaming industry.\n\nThe developer is still running from the 'little men' chasing him through small-scale projects.\nHe is willing to endure grueling hours and modest compensation just to grasp something much greater.\n\nBut he is within your reach.\n\nTalent always finds a way to reveal itself.\nForged iron shines brightest in the dark; you will easily spot him among the crowd.\n\nI don't know what the future holds for Adil Basri ERDEM... but I know YOU.\nAnd you wouldn't want to miss a chance like this.\n\n\n[color=#a7f3d0]--- INITIATE CONTACT PROTOCOLS ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]ACCESS LINKEDIN ARCHIVE[/url]\n\n[url=http://www.teamhusk.com.tr]TEAM HUSK PORTFOLIO[/url]\n\n[url=mailto:adilbasri06161@gmail.com]DIRECT MAIL COMMUNICATION[/url]"
+	var narrative_text = ""
+	if world and world.narrative_credit_text:
+		narrative_text = world.narrative_credit_text
+	else:
+		narrative_text = "Despite his relentless efforts and countless sleepless nights,\nAdil Basri ERDEM has yet to secure his rightful place in the gaming industry.\n\nThe developer is still running from the 'little men' chasing him through small-scale projects.\nHe is willing to endure grueling hours and modest compensation just to grasp something much greater.\n\nBut he is within your reach.\n\nTalent always finds a way to reveal itself.\nForged iron shines brightest in the dark; you will easily spot him among the crowd.\n\nI don't know what the future holds for Adil Basri ERDEM... but I know YOU.\nAnd you wouldn't want to miss a chance like this.\n\n\n[color=#a7f3d0]--- INITIATE CONTACT PROTOCOLS ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]ACCESS LINKEDIN ARCHIVE[/url]\n\n[url=http://www.teamhusk.com.tr]TEAM HUSK PORTFOLIO[/url]\n\n[url=mailto:adilbasri06161@gmail.com]DIRECT MAIL COMMUNICATION[/url]"
 	
 	if credits_label:
 		# Add wavy eerie look to the narrative
@@ -266,18 +277,22 @@ func trigger_escape_ending():
 		
 	# 8. Creator/Dev Log Slide Show transitions (Part 2)
 	# Each slide stays on screen for 2.5 seconds before moving to the next.
-	var slides = [
-		"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- DEVELOPMENT LOG ---[/color][/shake][/wave][/center]",
-		"[center]Creative Director & Game Designer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
-		"[center]Lead Programmer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
-		"[center]Narrative Writer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
-		"[center]World Building & Level Design\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
-		"[center]Voice Acting & Sound Design\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
-		"[center]Atmosphere & Shader Engineering\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
-		"[center]Enemy AI Architecture\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
-		"[center]QA Testing & Bug Survivor\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
-		"[center][font_size=32][wave amp=30 freq=3][shake rate=20 level=8][color=#ef4444][i]THANKS TO YOU FOR PLAYING![/i][/color][/shake][/wave][/font_size][/center]"
-	]
+	var slides = []
+	if world and world.dev_log_slides and world.dev_log_slides.size() > 0:
+		slides = world.dev_log_slides
+	else:
+		slides = [
+			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- DEVELOPMENT LOG ---[/color][/shake][/wave][/center]",
+			"[center]Creative Director & Game Designer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Lead Programmer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Narrative Writer\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]World Building & Level Design\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Voice Acting & Sound Design\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Atmosphere & Shader Engineering\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]Enemy AI Architecture\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center]QA Testing & Bug Survivor\n[wave amp=12 freq=2][shake rate=7 level=3][color=#ffffff]Adil Basri ERDEM[/color][/shake][/wave][/center]",
+			"[center][font_size=32][wave amp=30 freq=3][shake rate=20 level=8][color=#ef4444][i]THANKS TO YOU FOR PLAYING![/i][/color][/shake][/wave][/font_size][/center]"
+		]
 	
 	if slide_label:
 		for slide in slides:
