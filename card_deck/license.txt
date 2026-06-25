@@ -1,0 +1,11 @@
+Model Information:
+* title:	Card Deck
+* source:	https://sketchfab.com/3d-models/card-deck-d59018b06f0f42cdb1c56caee326bbdb
+* author:	mcnubbin (https://sketchfab.com/mcnubbin)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Card Deck" (https://sketchfab.com/3d-models/card-deck-d59018b06f0f42cdb1c56caee326bbdb) by mcnubbin (https://sketchfab.com/mcnubbin) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

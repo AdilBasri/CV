@@ -1,0 +1,9 @@
+WARNING: Godot 3.x SpatialMaterial remapped parameter not found: specular
+   at: _set (scene/resources/material.cpp:4112)
+   GDScript backtrace (most recent call first):
+       [0] setup_csg_materials (res://enterence.gd:111)
+       [1] _ready (res://enterence.gd:67)
+WARNING: Attempting to use a shader  that requires tangents with a mesh (res://road/scene.gltf::ArrayMesh_4cfxh) that doesn't contain tangents. Ensure that meshes are imported with the 'ensure_tangents' option. If creating your own meshes, add an `ARRAY_TANGENT` array (when using ArrayMesh) or call `generate_tangents()` (when using SurfaceTool).
+   at: _geometry_instance_add_surface_with_material (servers/rendering/renderer_rd/forward_clustered/render_forward_clustered.cpp:4092)
+WARNING: Attempting to use a shader  that requires tangents with a mesh (res://road/scene.gltf::ArrayMesh_4cfxh) that doesn't contain tangents. Ensure that meshes are imported with the 'ensure_tangents' option. If creating your own meshes, add an `ARRAY_TANGENT` array (when using ArrayMesh) or call `generate_tangents()` (when using SurfaceTool).
+   at: _geometry_instance_add_surface_with_material (servers/rendering/renderer_rd/forward_clustered/render_forward_clustered.cpp:4092)

@@ -1,0 +1,5 @@
+--- Headlight Direction Diagnostics ---
+Left Light Global Pos: (-2.608391, 3.559478, 9.371973)
+Left Light Forward Dir (-Z in local): (0.0, 0.0, 1.0)
+Right Light Global Pos: (2.391609, 3.559478, 9.371973)
+Right Light Forward Dir (-Z in local): (0.0, 0.0, 1.0)

@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://cm3d686q57lmr"]
+
+[ext_resource type="PackedScene" uid="uid://dyi7t6icggao" path="res://- Classic 64 Asset Pack 0.6/Nature/bush_01.blend" id="1_20xtt"]
+[ext_resource type="ArrayMesh" uid="uid://3opbxb5afs2m" path="res://bush.tres" id="2_umv13"]
+
+[node name="bush_012" instance=ExtResource("1_20xtt")]
+
+[node name="bush_01" parent="." index="0"]
+mesh = ExtResource("2_umv13")

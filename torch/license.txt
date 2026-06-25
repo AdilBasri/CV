@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low_Poly Electric Hand Torch
+* source:	https://sketchfab.com/3d-models/low-poly-electric-hand-torch-7bcbf438b6d749c5b503001473faa9e3
+* author:	RohitRajesh2003 (https://sketchfab.com/RohitRajesh2003)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low_Poly Electric Hand Torch" (https://sketchfab.com/3d-models/low-poly-electric-hand-torch-7bcbf438b6d749c5b503001473faa9e3) by RohitRajesh2003 (https://sketchfab.com/RohitRajesh2003) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -1,0 +1,112 @@
+[gd_scene load_steps=13 format=3 uid="uid://c6y78o3p4x8q"]
+
+[ext_resource type="Script" path="res://player.gd" id="1_player"]
+[ext_resource type="PackedScene" path="res://torch/scene.gltf" id="2_torch"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.35
+height = 2.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(0.180392, 0.380392, 0.560784, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_body"]
+material = SubResource("StandardMaterial3D_body")
+size = Vector3(0.4, 0.9, 0.25)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_head"]
+albedo_color = Color(0.901961, 0.74902, 0.34902, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_head"]
+material = SubResource("StandardMaterial3D_head")
+size = Vector3(0.25, 0.25, 0.25)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_limbs"]
+albedo_color = Color(0.25098, 0.25098, 0.25098, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_limbs"]
+material = SubResource("StandardMaterial3D_limbs")
+size = Vector3(0.12, 0.65, 0.12)
+
+[sub_resource type="BoxMesh" id="BoxMesh_legs"]
+material = SubResource("StandardMaterial3D_limbs")
+size = Vector3(0.15, 0.65, 0.15)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rain"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.701961, 0.803922, 0.94902, 0.35)
+
+[sub_resource type="BoxMesh" id="BoxMesh_rain"]
+material = SubResource("StandardMaterial3D_rain")
+size = Vector3(0.015, 0.4, 0.015)
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="Visuals" type="Node3D" parent="."]
+visible = false
+
+[node name="Body" type="MeshInstance3D" parent="Visuals"]
+mesh = SubResource("BoxMesh_body")
+
+[node name="Head" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+mesh = SubResource("BoxMesh_head")
+
+[node name="LeftArm" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.28, 0.2, 0)
+mesh = SubResource("BoxMesh_limbs")
+
+[node name="RightArm" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28, 0.2, 0)
+mesh = SubResource("BoxMesh_limbs")
+
+[node name="LeftLeg" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12, -0.65, 0)
+mesh = SubResource("BoxMesh_legs")
+
+[node name="RightLeg" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12, -0.65, 0)
+mesh = SubResource("BoxMesh_legs")
+
+[node name="CameraPivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, -0.15)
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Torch" parent="CameraPivot/Camera3D" instance=ExtResource("2_torch")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.18, -0.16, 0.0)
+
+[node name="Flashlight" type="SpotLight3D" parent="CameraPivot/Camera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, -0.16, -1.0)
+light_color = Color(1, 0.968627, 0.901961, 1)
+light_energy = 12.0
+shadow_enabled = true
+shadow_bias = 0.02
+spot_range = 50.0
+spot_attenuation = 1.2
+spot_angle = 45.0
+spot_angle_attenuation = 1.0
+
+[node name="RainParticles" type="CPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.0, 0)
+amount = 250
+lifetime = 1.2
+preprocess = 1.2
+mesh = SubResource("BoxMesh_rain")
+emission_shape = 3
+emission_box_extents = Vector3(10, 1, 10)
+direction = Vector3(0, -1, 0)
+spread = 0.0
+gravity = Vector3(0, -18, 0)
+initial_velocity_min = 12.0
+initial_velocity_max = 16.0

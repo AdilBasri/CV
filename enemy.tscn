@@ -1,0 +1,38 @@
+[gd_scene load_steps=2 format=3 uid="uid://d0hemyew8tfno"]
+
+[ext_resource type="PackedScene" uid="uid://fhqoklbr1cja" path="res://sign_enemy/scene.gltf" id="1_7k104"]
+
+[node name="Sketchfab_Scene" instance=ExtResource("1_7k104")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 27.643936, 0)
+
+[node name="Skeleton3D" parent="Sketchfab_model/fbx_merge_fbx/Object_2/RootNode/Sign-Root/Object_5" index="0"]
+bones/1/position = Vector3(-4.808251e-07, 50, -10)
+bones/1/rotation = Quaternion(-0.8191521, 0, 0, 0.57357633)
+bones/2/rotation = Quaternion(0.3826835, 0, 0, 0.9238796)
+bones/3/position = Vector3(9.5, 1.4999962, 22.000004)
+bones/3/rotation = Quaternion(0.15766917, 0.39333484, 0.637716, 0.64323133)
+bones/4/rotation = Quaternion(2.978239e-17, 1.3575997e-17, -0.1305262, 0.9914449)
+bones/5/position = Vector3(-9.5, 1.4999962, 22.000004)
+bones/5/rotation = Quaternion(0.12278789, -0.40557975, -0.57922786, 0.69636434)
+bones/6/rotation = Quaternion(5.8659076e-17, -2.0272463e-17, 0.1305262, 0.9914449)
+bones/7/position = Vector3(1.9670097e-07, -1.9999962, 29.499996)
+bones/7/rotation = Quaternion(-0.21643956, 0, 0, 0.976296)
+bones/8/rotation = Quaternion(-0.83685994, -0.13195783, -0.082750104, 0.5247906)
+bones/9/rotation = Quaternion(-0.83685994, 0.13195783, 0.082750104, 0.5247906)
+bones/10/position = Vector3(20, 30, 7.662491)
+bones/10/rotation = Quaternion(-0.6903456, 0.15304591, 0.15304594, 0.69034547)
+bones/11/position = Vector3(25, 1.5140789, -3.7089984)
+bones/11/rotation = Quaternion(0.976296, 0, -0.2164396, 0)
+bones/12/position = Vector3(-25, 1.5140789, -3.7089984)
+bones/12/rotation = Quaternion(0.976296, -2.882068e-08, 0.2164396, 1.3000168e-07)
+bones/13/position = Vector3(-20, 30, 7.662491)
+bones/13/rotation = Quaternion(-0.6903456, -0.15304591, -0.15304594, 0.69034547)
+
+[node name="Floor" parent="Sketchfab_model/fbx_merge_fbx/Object_2/RootNode" index="1"]
+visible = false
+
+[node name="Floor_Vertex Colors_0" parent="Sketchfab_model/fbx_merge_fbx/Object_2/RootNode/Floor" index="0"]
+visible = false
+
+[node name="AnimationPlayer" parent="." index="1"]
+autoplay = "Move"

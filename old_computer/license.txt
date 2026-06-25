@@ -1,0 +1,11 @@
+Model Information:
+* title:	Old Computer
+* source:	https://sketchfab.com/3d-models/old-computer-2ab893e970fb4c5dad59000026b0fb15
+* author:	Shrimp Goombason (https://sketchfab.com/sbsiydfw)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Old Computer" (https://sketchfab.com/3d-models/old-computer-2ab893e970fb4c5dad59000026b0fb15) by Shrimp Goombason (https://sketchfab.com/sbsiydfw) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

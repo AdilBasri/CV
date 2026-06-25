@@ -1,0 +1,672 @@
+{
+  "accessors": [
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 210,
+      "max": [
+        1.4059758186340332,
+        4.893671989440918,
+        2.8848655223846436
+      ],
+      "min": [
+        -1.4059765338897705,
+        -2.9923808574676514,
+        -1.1592722870545913e-07
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 2520,
+      "componentType": 5126,
+      "count": 210,
+      "max": [
+        1.0,
+        0.9325173497200012,
+        1.0
+      ],
+      "min": [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 210,
+      "max": [
+        1.0,
+        1.0
+      ],
+      "min": [
+        0.0,
+        0.00390625
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 276,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 5040,
+      "componentType": 5126,
+      "count": 108,
+      "max": [
+        0.4699311852455139,
+        0.25000351667404175,
+        0.4469040632247925
+      ],
+      "min": [
+        -0.4698760211467743,
+        -5.288601641950663e-06,
+        -0.44690313935279846
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 6336,
+      "componentType": 5126,
+      "count": 108,
+      "max": [
+        0.951038658618927,
+        1.0,
+        1.0
+      ],
+      "min": [
+        -0.9510939121246338,
+        -1.0,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 108,
+      "max": [
+        0.22745098173618317,
+        0.22745098173618317,
+        0.22745098173618317,
+        1.0
+      ],
+      "min": [
+        0.0313725508749485,
+        0.0313725508749485,
+        0.0313725508749485,
+        1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 1680,
+      "componentType": 5126,
+      "count": 108,
+      "max": [
+        1.0,
+        2.880000114440918
+      ],
+      "min": [
+        0.09375,
+        0.0
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 1104,
+      "componentType": 5125,
+      "count": 108,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 7632,
+      "componentType": 5126,
+      "count": 108,
+      "max": [
+        0.4698762893676758,
+        5.270459041639697e-06,
+        0.4469040632247925
+      ],
+      "min": [
+        -0.46993085741996765,
+        -0.2500034272670746,
+        -0.44690313935279846
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 8928,
+      "componentType": 5126,
+      "count": 108,
+      "max": [
+        0.9510939121246338,
+        1.0,
+        1.0
+      ],
+      "min": [
+        -0.951038658618927,
+        -1.0,
+        -1.0
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "byteOffset": 1728,
+      "componentType": 5126,
+      "count": 108,
+      "max": [
+        0.22745098173618317,
+        0.22745098173618317,
+        0.22745098173618317,
+        1.0
+      ],
+      "min": [
+        0.0313725508749485,
+        0.0313725508749485,
+        0.0313725508749485,
+        1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 2544,
+      "componentType": 5126,
+      "count": 108,
+      "max": [
+        1.0,
+        2.880000114440918
+      ],
+      "min": [
+        0.09375,
+        0.0
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 1536,
+      "componentType": 5125,
+      "count": 108,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 10224,
+      "componentType": 5126,
+      "count": 12,
+      "max": [
+        -2.8081326484680176,
+        -0.4308878779411316,
+        1.0800607204437256
+      ],
+      "min": [
+        -2.868506669998169,
+        -0.9482890963554382,
+        0.489654541015625
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 10368,
+      "componentType": 5126,
+      "count": 12,
+      "max": [
+        -0.9687147736549377,
+        -0.00985608622431755,
+        0.20586533844470978
+      ],
+      "min": [
+        -0.9936730861663818,
+        -0.18591806292533875,
+        0.05071870982646942
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 3408,
+      "componentType": 5126,
+      "count": 12,
+      "max": [
+        1.0,
+        1.0
+      ],
+      "min": [
+        0.0,
+        0.0
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 1968,
+      "componentType": 5125,
+      "count": 12,
+      "type": "SCALAR"
+    }
+  ],
+  "asset": {
+    "extras": {
+      "author": "korkskrew2000 (https://sketchfab.com/korkskrew2000)",
+      "license": "CC-BY-SA-4.0 (http://creativecommons.org/licenses/by-sa/4.0/)",
+      "source": "https://sketchfab.com/3d-models/psx-low-poly-old-caravan-ac8d139a1ffe4e59927e178a2050544d",
+      "title": "PSX Low-poly Old Caravan"
+    },
+    "generator": "Sketchfab-16.59.0",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 2016,
+      "name": "floatBufferViews",
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 3504,
+      "byteOffset": 2016,
+      "byteStride": 8,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 10512,
+      "byteOffset": 5520,
+      "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 3456,
+      "byteOffset": 16032,
+      "byteStride": 16,
+      "name": "floatBufferViews",
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 19488,
+      "uri": "scene.bin"
+    }
+  ],
+  "extensionsRequired": [
+    "KHR_materials_pbrSpecularGlossiness"
+  ],
+  "extensionsUsed": [
+    "KHR_materials_pbrSpecularGlossiness"
+  ],
+  "images": [
+    {
+      "uri": "textures/CarCaravan_diffuse.png"
+    },
+    {
+      "uri": "textures/tire1.001_diffuse.png"
+    },
+    {
+      "uri": "textures/LicensePlate.001_diffuse.png"
+    }
+  ],
+  "materials": [
+    {
+      "doubleSided": true,
+      "extensions": {
+        "KHR_materials_pbrSpecularGlossiness": {
+          "diffuseFactor": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "diffuseTexture": {
+            "index": 0
+          },
+          "glossinessFactor": 1.0,
+          "specularFactor": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "name": "CarCaravan"
+    },
+    {
+      "doubleSided": true,
+      "emissiveFactor": [
+        0.290810955430313,
+        0.290810955430313,
+        0.290810955430313
+      ],
+      "emissiveTexture": {
+        "index": 1
+      },
+      "extensions": {
+        "KHR_materials_pbrSpecularGlossiness": {
+          "diffuseFactor": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "diffuseTexture": {
+            "index": 1
+          },
+          "glossinessFactor": 0.0,
+          "specularFactor": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "name": "tire1.001"
+    },
+    {
+      "doubleSided": true,
+      "extensions": {
+        "KHR_materials_pbrSpecularGlossiness": {
+          "diffuseFactor": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "diffuseTexture": {
+            "index": 2
+          },
+          "glossinessFactor": 0.1788854381999832,
+          "specularFactor": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "name": "LicensePlate.001"
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Caravan_CarCaravan_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 0,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "Tire.017_tire1.001_0",
+      "primitives": [
+        {
+          "attributes": {
+            "COLOR_0": 6,
+            "NORMAL": 5,
+            "POSITION": 4,
+            "TEXCOORD_0": 7
+          },
+          "indices": 8,
+          "material": 1,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "Tire.018_tire1.001_0",
+      "primitives": [
+        {
+          "attributes": {
+            "COLOR_0": 11,
+            "NORMAL": 10,
+            "POSITION": 9,
+            "TEXCOORD_0": 12
+          },
+          "indices": 13,
+          "material": 1,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "LicensePlate.005_LicensePlate.001_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 15,
+            "POSITION": 14,
+            "TEXCOORD_0": 16
+          },
+          "indices": 17,
+          "material": 2,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [
+        1
+      ],
+      "matrix": [
+        1.6929120768157627e-16,
+        2.9189766372787136e-16,
+        -0.7624198198318481,
+        0.0,
+        -0.7624198198318481,
+        4.6987749158671286e-32,
+        -1.6929120768157627e-16,
+        0.0,
+        -9.397549831734257e-33,
+        0.7624198198318481,
+        2.9189766372787136e-16,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "Sketchfab_model"
+    },
+    {
+      "children": [
+        2
+      ],
+      "matrix": [
+        0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.009999999776482582,
+        0.0,
+        0.0,
+        -0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "2b5c8079286b40f1b6842a4fa1a9bae6.fbx"
+    },
+    {
+      "children": [
+        3
+      ],
+      "name": "RootNode"
+    },
+    {
+      "children": [
+        4,
+        5,
+        7,
+        9
+      ],
+      "matrix": [
+        95.00000762939453,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.5477465785210126e-05,
+        -95.00000762939328,
+        0.0,
+        0.0,
+        95.00000762939328,
+        -1.5477465785210126e-05,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "Caravan"
+    },
+    {
+      "mesh": 0,
+      "name": "Caravan_CarCaravan_0"
+    },
+    {
+      "children": [
+        6
+      ],
+      "matrix": [
+        1.9470718870540082e-07,
+        -0.9999999999999811,
+        2.6469779601696883e-23,
+        0.0,
+        0.9999999999999811,
+        1.9470718870540082e-07,
+        -6.3108872402987265e-30,
+        0.0,
+        1.1570308698701295e-30,
+        2.646977960169761e-23,
+        1.0,
+        0.0,
+        0.9654168486595154,
+        0.22233907878398895,
+        0.00022009015083312988,
+        1.0
+      ],
+      "name": "Tire.017"
+    },
+    {
+      "mesh": 1,
+      "name": "Tire.017_tire1.001_0"
+    },
+    {
+      "children": [
+        8
+      ],
+      "matrix": [
+        1.9470718870540082e-07,
+        -0.9999999999999811,
+        2.6469779601696883e-23,
+        0.0,
+        0.9999999999999811,
+        1.9470718870540082e-07,
+        -6.3108872402987265e-30,
+        0.0,
+        1.1570308698701295e-30,
+        2.646977960169761e-23,
+        1.0,
+        0.0,
+        -0.9620189666748047,
+        0.22233882546424866,
+        0.00022009015083312988,
+        1.0
+      ],
+      "name": "Tire.018"
+    },
+    {
+      "mesh": 2,
+      "name": "Tire.018_tire1.001_0"
+    },
+    {
+      "children": [
+        10
+      ],
+      "matrix": [
+        -0.06770238340137835,
+        0.9716045282913034,
+        0.22671794786828603,
+        0.0,
+        -0.6068713654972739,
+        0.14026344145369016,
+        -0.7823255035608614,
+        0.0,
+        -0.7919111942632401,
+        -0.19055392043442032,
+        0.5801427629377759,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "LicensePlate.005"
+    },
+    {
+      "mesh": 3,
+      "name": "LicensePlate.005_LicensePlate.001_0"
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9728,
+      "minFilter": 9728,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Sketchfab_Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    },
+    {
+      "sampler": 0,
+      "source": 1
+    },
+    {
+      "sampler": 0,
+      "source": 2
+    }
+  ]
+}

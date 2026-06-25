@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://d2r3l7c6d7s04"]
+
+[ext_resource type="PackedScene" uid="uid://dvexlq6igm06f" path="res://wolf_low_poly_rigged/scene.gltf" id="1_r57si"]
+
+[node name="Sketchfab_Scene" instance=ExtResource("1_r57si")]
+transform = Transform3D(0.08, 0, 0, 0, 0.08, 0, 0, 0, 0.08, 0, 0, 0)

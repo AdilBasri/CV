@@ -1,0 +1,11 @@
+Model Information:
+* title:	PS1 Gravestone
+* source:	https://sketchfab.com/3d-models/ps1-gravestone-aa8e252b05324b1ca220fbe684e8be53
+* author:	abomination (https://sketchfab.com/ab0mination)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "PS1 Gravestone" (https://sketchfab.com/3d-models/ps1-gravestone-aa8e252b05324b1ca220fbe684e8be53) by abomination (https://sketchfab.com/ab0mination) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

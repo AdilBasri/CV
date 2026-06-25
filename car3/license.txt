@@ -1,0 +1,11 @@
+Model Information:
+* title:	covered car
+* source:	https://sketchfab.com/3d-models/covered-car-88f8573b800f4305809f731904620790
+* author:	Arrangemonk (https://sketchfab.com/Arrangemonk9000)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "covered car" (https://sketchfab.com/3d-models/covered-car-88f8573b800f4305809f731904620790) by Arrangemonk (https://sketchfab.com/Arrangemonk9000) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
