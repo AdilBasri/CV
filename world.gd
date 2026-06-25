@@ -120,6 +120,12 @@ var walkey_sfx: AudioStreamPlayer = null
 var horror_sfx: AudioStreamPlayer = null
 
 var warning_label: Label = null
+var game_over_layer: CanvasLayer = null
+var game_over_rect: ColorRect = null
+var respawn_layer: CanvasLayer = null
+var respawn_button: Button = null
+var respawn_btn_text = "RESPAWN"
+
 
 
 
@@ -808,17 +814,103 @@ func setup_ui():
 	warning_label.custom_minimum_size = Vector2(640, 60)
 	warning_label.size = Vector2(640, 60)
 	warning_label.anchor_left = 0.5
-	warning_label.anchor_top = 0.5
+	warning_label.anchor_top = 0.0
 	warning_label.anchor_right = 0.5
-	warning_label.anchor_bottom = 0.5
+	warning_label.anchor_bottom = 0.0
 	warning_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	warning_label.grow_vertical = Control.GROW_DIRECTION_BOTH
+	warning_label.grow_vertical = Control.GROW_DIRECTION_END
 	warning_label.offset_left = -320
 	warning_label.offset_right = 320
-	warning_label.offset_top = -30
-	warning_label.offset_bottom = 30
+	warning_label.offset_top = 20
+	warning_label.offset_bottom = 80
 	warning_label.visible = false
 	ui_layer.add_child(warning_label)
+
+	# 6. Game Over Layer & UI
+	# 6. Game Over Layer & UI (Layer 4: Blood Splatter Overlay)
+	game_over_layer = CanvasLayer.new()
+	game_over_layer.layer = 4 # Above fade layer
+	add_child(game_over_layer)
+	
+	var game_over_container = Control.new()
+	game_over_container.name = "GameOverContainer"
+	game_over_container.anchor_left = 0.0
+	game_over_container.anchor_top = 0.0
+	game_over_container.anchor_right = 1.0
+	game_over_container.anchor_bottom = 1.0
+	game_over_container.offset_left = 0
+	game_over_container.offset_right = 0
+	game_over_container.offset_top = 0
+	game_over_container.offset_bottom = 0
+	game_over_container.visible = false
+	game_over_layer.add_child(game_over_container)
+	
+	# Blood Splatter Overlay
+	game_over_rect = ColorRect.new()
+	game_over_rect.name = "BloodOverlay"
+	
+	var blood_mat = ShaderMaterial.new()
+	var blood_shd = load("res://blood_splatter.gdshader")
+	if blood_shd:
+		blood_mat.shader = blood_shd
+		blood_mat.set_shader_parameter("progress", 0.0)
+	game_over_rect.material = blood_mat
+	
+	game_over_rect.anchor_left = 0.0
+	game_over_rect.anchor_right = 1.0
+	game_over_rect.anchor_top = 0.0
+	game_over_rect.anchor_bottom = 1.0
+	game_over_rect.offset_left = 0
+	game_over_rect.offset_right = 0
+	game_over_rect.offset_top = 0
+	game_over_rect.offset_bottom = 0
+	game_over_container.add_child(game_over_rect)
+	
+	# 7. Respawn Layer & UI (Layer 5: On top of blood splatter)
+	respawn_layer = CanvasLayer.new()
+	respawn_layer.layer = 5 # Above blood splatter layer
+	add_child(respawn_layer)
+	
+	var respawn_container = Control.new()
+	respawn_container.name = "RespawnContainer"
+	respawn_container.anchor_left = 0.0
+	respawn_container.anchor_top = 0.0
+	respawn_container.anchor_right = 1.0
+	respawn_container.anchor_bottom = 1.0
+	respawn_container.offset_left = 0
+	respawn_container.offset_right = 0
+	respawn_container.offset_top = 0
+	respawn_container.offset_bottom = 0
+	respawn_container.visible = false
+	respawn_layer.add_child(respawn_container)
+	
+	# Respawn Button
+	respawn_button = Button.new()
+	respawn_button.name = "RespawnButton"
+	respawn_button.text = respawn_btn_text
+	respawn_button.flat = true
+	respawn_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	
+	respawn_button.add_theme_font_size_override("font_size", 36)
+	respawn_button.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	respawn_button.add_theme_color_override("font_hover_color", Color(0.8, 0.0, 0.0))
+	respawn_button.add_theme_color_override("font_pressed_color", Color(0.5, 0.0, 0.0))
+	
+	respawn_button.anchor_left = 0.5
+	respawn_button.anchor_top = 0.5
+	respawn_button.anchor_right = 0.5
+	respawn_button.anchor_bottom = 0.5
+	respawn_button.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	respawn_button.grow_vertical = Control.GROW_DIRECTION_BOTH
+	respawn_button.offset_left = -150
+	respawn_button.offset_right = 150
+	respawn_button.offset_top = -30
+	respawn_button.offset_bottom = 30
+	respawn_button.visible = false
+	respawn_container.add_child(respawn_button)
+	respawn_button.pressed.connect(self._on_respawn_pressed)
+
+
 
 
 func _on_meta_clicked(meta):
@@ -1550,6 +1642,9 @@ func start_climax_sequence():
 		cinematic_cam1.current = true
 		
 	if enemy_node:
+		if enemy_spawn:
+			enemy_node.global_position = enemy_spawn.global_position
+			enemy_node.rotation = Vector3.ZERO
 		enemy_node.visible = true
 		
 	# 3. Aydınlanma (Fade in)
@@ -1685,6 +1780,8 @@ func trigger_game_over():
 		walkey_sfx.stop()
 	if heartbeat_sfx:
 		heartbeat_sfx.stop()
+	if horror_sfx:
+		horror_sfx.stop()
 		
 	print("Game Over triggered. Fading to black...")
 	var tween = create_tween()
@@ -1692,7 +1789,140 @@ func trigger_game_over():
 		tween.tween_property(fade_rect, "color", Color(0, 0, 0, 1.0), 1.5)
 	await tween.finished
 	
-	get_tree().quit()
+	# Display Game Over Container
+	if not game_over_layer:
+		print("[DEBUG] ERROR: game_over_layer is NULL!")
+	else:
+		print("[DEBUG] game_over_layer is valid. Layer: ", game_over_layer.layer)
+		
+	var container = game_over_layer.get_node_or_null("GameOverContainer") if game_over_layer else null
+	if container:
+		print("[DEBUG] GameOverContainer found, setting visible = true")
+		container.visible = true
+	else:
+		print("[DEBUG] ERROR: GameOverContainer not found!")
+		
+	# Reset/configure blood splatter progress
+	if game_over_rect:
+		print("[DEBUG] game_over_rect found, setting visible = true")
+		game_over_rect.visible = true
+		var mat = game_over_rect.material as ShaderMaterial
+		if mat:
+			print("[DEBUG] ShaderMaterial found on blood rect, animating progress from 0.0 to 1.0...")
+			mat.set_shader_parameter("progress", 0.0)
+			
+			# Animate blood progress from 0.0 to 1.0 (splattering/staining up the screen)
+			var blood_tween = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			blood_tween.tween_property(mat, "shader_parameter/progress", 1.0, 1.2)
+			await blood_tween.finished
+			print("[DEBUG] Blood splatter animation finished.")
+		else:
+			print("[DEBUG] ERROR: game_over_rect material is not a ShaderMaterial or is NULL!")
+	else:
+		print("[DEBUG] ERROR: game_over_rect is NULL!")
+		
+	# Show retry container and button, and release mouse cursor
+	var respawn_cont = respawn_layer.get_node_or_null("RespawnContainer") if respawn_layer else null
+	if respawn_cont:
+		print("[DEBUG] RespawnContainer found, setting visible = true")
+		respawn_cont.visible = true
+	else:
+		print("[DEBUG] ERROR: RespawnContainer not found!")
+		
+	if respawn_button:
+		print("[DEBUG] Showing respawn_button...")
+		print("[DEBUG] Button text: '", respawn_button.text, "'")
+		print("[DEBUG] Button size: ", respawn_button.size)
+		print("[DEBUG] Button position: ", respawn_button.position)
+		print("[DEBUG] Button global_position: ", respawn_button.global_position)
+		var p1 = respawn_button.get_parent()
+		if p1:
+			print("[DEBUG] Parent: ", p1.name, " | visible: ", p1.visible, " | size: ", p1.size, " | pos: ", p1.position)
+			var p2 = p1.get_parent()
+			if p2:
+				print("[DEBUG] Grandparent: ", p2.name, " | visible: ", p2.visible)
+		respawn_button.visible = true
+		print("[DEBUG] Button visible set to: ", respawn_button.visible)
+	else:
+		print("[DEBUG] ERROR: respawn_button is NULL!")
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	print("[DEBUG] Mouse set to visible. Game Over UI setup sequence finished.")
+
+
+func _on_respawn_pressed():
+	print("Respawn pressed. Resetting climax sequence...")
+	
+	# Hide Game Over UI elements
+	var container = game_over_layer.get_node_or_null("GameOverContainer") if game_over_layer else null
+	if container:
+		container.visible = false
+		
+	var respawn_cont = respawn_layer.get_node_or_null("RespawnContainer") if respawn_layer else null
+	if respawn_cont:
+		respawn_cont.visible = false
+		
+	if respawn_button:
+		respawn_button.visible = false
+	if game_over_rect:
+		game_over_rect.visible = false
+		var mat = game_over_rect.material as ShaderMaterial
+		if mat:
+			mat.set_shader_parameter("progress", 0.0)
+		
+	# Re-capture mouse
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
+	# Stop active climax sounds/sfx
+	if walkey_sfx:
+		walkey_sfx.stop()
+	if heartbeat_sfx:
+		heartbeat_sfx.stop()
+	if horror_sfx:
+		horror_sfx.stop()
+		
+	# Hide warning label
+	if warning_label:
+		warning_label.visible = false
+		warning_label.text = ""
+		
+	# Reset states
+	is_chase_active = false
+	is_interacting = false
+	
+	# Reset player's interaction state
+	if player_node and is_instance_valid(player_node):
+		player_node.is_interacting = false
+		player_node.velocity = Vector3.ZERO
+		
+	# Reset enemy position and visibility
+	var enemy_node = get_node_or_null("enemy")
+	var enemy_spawn = get_node_or_null("EnemySpawnPoint")
+	if enemy_node:
+		enemy_node.visible = false
+		var anim_player = enemy_node.get_node_or_null("AnimationPlayer")
+		if not anim_player:
+			for child in enemy_node.get_children():
+				if child is AnimationPlayer:
+					anim_player = child
+					break
+				for subchild in child.get_children():
+					if subchild is AnimationPlayer:
+						anim_player = subchild
+						break
+		if anim_player:
+			anim_player.stop()
+			
+		if enemy_spawn:
+			enemy_node.global_position = enemy_spawn.global_position
+			enemy_node.rotation = Vector3.ZERO
+			
+	# Reset cameras
+	var player_cam = player_node.get_node_or_null("CameraPivot/Camera3D") if player_node else null
+	if player_cam:
+		player_cam.make_current()
+		
+	# Re-trigger the climax sequence
+	start_climax_sequence()
 
 func print_node_hierarchy(node: Node, indent: String = ""):
 	var vis = node.visible if "visible" in node else true
@@ -1792,9 +2022,14 @@ func apply_gameplay_localization():
 	escape_message_text = data.get("escape_message", "YOU MANAGED TO ESCAPE!")
 	narrative_credit_text = data.get("narrative_credits", "")
 	dev_log_slides = data.get("dev_log_slides", [])
+	respawn_btn_text = data.get("respawn", "RESPAWN")
 	
 	if interact_prompt:
 		interact_prompt.text = data.get("interact_default", "Interact by pressing the E key")
+		
+	if respawn_button:
+		respawn_button.text = respawn_btn_text
+
 		
 	print("Gameplay localization applied for locale: ", locale)
 
@@ -1852,6 +2087,7 @@ var localization_data = {
 		"interact_car": "Interact with E for get in the car!",
 		"chase_warning": "Run to car for your life!",
 		"escape_message": "YOU MANAGED TO ESCAPE!",
+		"respawn": "RESPAWN",
 		"narrative_credits": "Despite his relentless efforts and countless sleepless nights,\nAdil Basri ERDEM has yet to secure his rightful place in the gaming industry.\n\nThe developer is still running from the 'little men' chasing him through small-scale projects.\nHe is willing to endure grueling hours and modest compensation just to grasp something much greater.\n\nBut he is within your reach.\n\nTalent always finds a way to reveal itself.\nForged iron shines brightest in the dark; you will easily spot him among the crowd.\n\nI don't know what the future holds for Adil Basri ERDEM... but I know YOU.\nAnd you wouldn't want to miss a chance like this.\n\n\n[color=#a7f3d0]--- INITIATE CONTACT PROTOCOLS ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]ACCESS LINKEDIN ARCHIVE[/url]\n\n[url=http://www.teamhusk.com.tr]TEAM HUSK PORTFOLIO[/url]\n\n[url=mailto:adilbasri06161@gmail.com]DIRECT MAIL COMMUNICATION[/url]",
 		"dev_log_slides": [
 			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- DEVELOPMENT LOG ---[/color][/shake][/wave][/center]",
@@ -1919,6 +2155,7 @@ var localization_data = {
 		"interact_car": "Arabaya binmek için E ile etkileşime geç!",
 		"chase_warning": "Hayatın için arabaya koş!",
 		"escape_message": "KAÇMAYI BAŞARDIN!",
+		"respawn": "DİRİL",
 		"narrative_credits": "Aralıksız çabalarına ve sayısız uykusuz gecesine rağmen,\nAdil Basri ERDEM henüz oyun endüstrisinde hak ettiği yeri bulamadı.\n\nGeliştirici hala küçük projelerle kendisini kovalayan 'küçük adamlardan' kaçıyor.\nDaha büyük bir şeyi yakalamak için yorucu saatlere ve mütevazı ücretlere katlanmaya razı.\n\nAma o sizin erişebileceğiniz bir yerde.\n\nYetenek kendini göstermenin bir yolunu her zaman bulur.\nDövülmüş demir en çok karanlıkta parlar; onu kalabalık arasında kolayca fark edeceksiniz.\n\nAdil Basri ERDEM için geleceğin ne getireceğini bilmiyorum... ama SİZİ biliyorum.\nVe böyle bir fırsatı kaçırmak istemezsiniz.\n\n\n[color=#a7f3d0]--- İLETİŞİM PROTOKOLLERİNİ BAŞLAT ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]LINKEDIN ARŞİVİNE ERİŞ[/url]\n\n[url=http://www.teamhusk.com.tr]TEAM HUSK PORTFOLYOSU[/url]\n\n[url=mailto:adilbasri06161@gmail.com]DOĞRUDAN E-POSTA İLETİŞİMİ[/url]",
 		"dev_log_slides": [
 			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- GELİŞTİRME GÜNLÜĞÜ ---[/color][/shake][/wave][/center]",
@@ -1986,6 +2223,7 @@ var localization_data = {
 		"interact_car": "Drücke E, um ins Auto einzusteigen!",
 		"chase_warning": "Lauf um dein Leben zum Auto!",
 		"escape_message": "DU HAST ES GESCHAFFT ZU ENTKOMMEN!",
+		"respawn": "WIEDERAUFERSTEHEN",
 		"narrative_credits": "Trotz seiner unermüdlichen Bemühungen und unzähligen schlaflosen Nächte\nhat Adil Basri ERDEM seinen rechtmäßigen Platz in der Spieleindustrie noch nicht gefunden.\n\nDer Entwickler läuft immer noch vor den 'kleinen Männern' weg, die ihn durch kleine Projekte jagen.\nEr ist bereit, zermürbende Stunden und eine bescheidene Vergütung in Kauf zu nehmen, nur um nach etwas viel Größerem zu greifen.\n\nAber er ist in Ihrer Reichweite.\n\nTalent findet immer einen Weg, sich zu offenbaren.\nGeschmiedetes Eisen glänzt im Dunkeln am hellsten; Sie werden ihn leicht in der Menge erkennen.\n\nIch weiß nicht, was die Zukunft für Adil Basri ERDEM bereithält... aber ich kenne SIE.\nUnd Sie würden sich eine solche Gelegenheit nicht entgehen lassen wollen.\n\n\n[color=#a7f3d0]--- KONTAKTAUFNAHME STARTEN ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]LINKEDIN-ARCHIV ÖFFNEN[/url]\n\n[url=http://www.teamhusk.com.tr]TEAM HUSK PORTFOLIO[/url]\n\n[url=mailto:adilbasri06161@gmail.com]DIREKTE E-MAIL-KOMMUNIKATION[/url]",
 		"dev_log_slides": [
 			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- ENTWICKLUNGSPROTOKOLL ---[/color][/shake][/wave][/center]",
@@ -2053,6 +2291,7 @@ var localization_data = {
 		"interact_car": "Interagisci con E per salire in macchina!",
 		"chase_warning": "Corri alla macchina per salvarti la vita!",
 		"escape_message": "SEI RIUSCITO A FUGGIRE!",
+		"respawn": "RINASCI",
 		"narrative_credits": "Nonostante i suoi incessanti sforzi e le innumerevoli notti insonni,\nAdil Basri ERDEM non ha ancora assicurato il suo giusto posto nell'industria dei videogiochi.\n\nLo sviluppatore sta ancora fuggendo dai 'piccoli uomini' che lo inseguono attraverso progetti su piccola scala.\nÈ disposto a sopportare ore estenuanti e compensi modesti pur di afferrare qualcosa di molto più grande.\n\nMa è alla vostra portata.\n\nIl talento trova sempre un modo per rivelarsi.\nIl ferro battuto risplende di più nell'oscurità; lo individuerete facilmente tra la folla.\n\nNon so cosa riservi il futuro per Adil Basri ERDEM... ma conosco VOI.\nE non vorrete perdere un'occasione del genere.\n\n\n[color=#a7f3d0]--- INIZIA PROTOCOLLI DI CONTATTO ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]ACCEDI ALL'ARCHIVIO LINKEDIN[/url]\n\n[url=http://www.teamhusk.com.tr]PORTFOLIO TEAM HUSK[/url]\n\n[url=mailto:adilbasri06161@gmail.com]COMUNICAZIONE E-POSTA DIRETTA[/url]",
 		"dev_log_slides": [
 			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- LOG DI SVILUPPO ---[/color][/shake][/wave][/center]",
@@ -2120,6 +2359,7 @@ var localization_data = {
 		"interact_car": "Interagir avec E pour monter dans la voiture !",
 		"chase_warning": "Cours vers la voiture pour sauver ta vie !",
 		"escape_message": "TU AS RÉUSSI À T'ÉCHAPPER !",
+		"respawn": "RENAÎTRE",
 		"narrative_credits": "Malgré ses efforts incessants et ses innombrables nuits blanches,\nAdil Basri ERDEM n'a pas encore trouvé sa juste place dans l'industrie du jeu vidéo.\n\nLe développeur fuit toujours les 'petits hommes' qui le poursuivent à travers des micro-projets.\nIl est prêt à endurer des heures exténuantes et une rémunération modeste pour saisir quelque chose de bien plus grand.\n\nMais il est à votre portée.\n\nLe talent trouve toujours un moyen de se révéler.\nLe fer forgé brille plus fort dans l'obscurité ; vous le repérerez facilement dans la foule.\n\nJe ne sais pas ce que l'avenir réserve à Adil Basri ERDEM... mais je VOUS connais.\nEt vous ne voudriez pas rater une telle opportunité.\n\n\n[color=#a7f3d0]--- INITIALISER LE PROTOCOLE DE CONTACT ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]ACCÉDER AUX ARCHIVES LINKEDIN[/url]\n\n[url=http://www.teamhusk.com.tr]PORTFOLIO TEAM HUSK[/url]\n\n[url=mailto:adilbasri06161@gmail.com]COMMUNICATION E-MAIL DIRECTE[/url]",
 		"dev_log_slides": [
 			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- LOG DE DÉVELOPPEMENT ---[/color][/shake][/wave][/center]",
@@ -2187,6 +2427,7 @@ var localization_data = {
 		"interact_car": "¡Interactúa con E para entrar al coche!",
 		"chase_warning": "¡Corre al coche para salvar tu vida!",
 		"escape_message": "¡LOGRASTE ESCAPAR!",
+		"respawn": "REAPARECER",
 		"narrative_credits": "A pesar de sus incansables esfuerzos e innumerables noches de insomnio,\nAdil Basri ERDEM aún no ha asegurado el lugar que le corresponde en la industria de los videojuegos.\n\nEl desarrollador sigue huyendo de los 'hombres pequeños' que lo persiguen a través de proyectos a pequeña escala.\nEstá dispuesto a soportar jornadas agotadoras y una compensación modesta solo por alcanzar algo mucho mayor.\n\nMiembro de la comunidad dentro de tu alcance.\n\nEl talento siempre encuentra la manera de revelarse.\nEl hierro forjado brilla con más fuerza en la oscuridad; lo identificarás fácilmente entre la multitud.\n\nNo sé qué depara el futuro para Adil Basri ERDEM... pero te conozco a TI.\nY no querrás perder una oportunidad como esta.\n\n\n[color=#a7f3d0]--- INICIAR PROTOCOLOS DE CONTACTO ---[/color]\n\n[url=https://www.linkedin.com/in/adil-basri-erdem-189941249/]ACCEDER AL ARCHIVO DE LINKEDIN[/url]\n\n[url=http://www.teamhusk.com.tr]PORTAFOLIO TEAM HUSK[/url]\n\n[url=mailto:adilbasri06161@gmail.com]CORREO DIRECTO[/url]",
 		"dev_log_slides": [
 			"[center][wave amp=20 freq=3][shake rate=12 level=5][color=#a7f3d0]--- REGISTRO DE DESARROLLO ---[/color][/shake][/wave][/center]",

@@ -1377,6 +1377,9 @@ bones/12/rotation = Quaternion(1, 0, 0, 1.3315805e-07)
 bones/13/position = Vector3(-10, -60.471992, -3.7089996)
 bones/13/rotation = Quaternion(-0.7071068, 0, 0, 0.7071067)
 
+[node name="AnimationPlayer" parent="enemy/monster" index="1"]
+autoplay = ""
+
 [editable path="Monster"]
 [editable path="yol1"]
 [editable path="yol1/guard_rail2"]

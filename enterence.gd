@@ -29,6 +29,7 @@ var ui_layer: CanvasLayer = null
 var fade_layer: CanvasLayer = null
 var main_menu_container: VBoxContainer = null
 var options_panel: Panel = null
+var ps2_material: ShaderMaterial = null
 var faq_panel: Panel = null
 var exit_popup: Panel = null
 
@@ -142,8 +143,38 @@ func _ready():
 	setup_3d_speed_lines()
 	
 	# Main UI hierarchy
+	setup_ps2_screen_shader()
 	setup_ui()
 	load_settings()
+func setup_ps2_screen_shader():
+	var canvas_layer = CanvasLayer.new()
+	canvas_layer.layer = 2 # PS2 screen shader renders on top of UI
+	add_child(canvas_layer)
+	
+	var color_rect = ColorRect.new()
+	color_rect.anchor_left = 0.0
+	color_rect.anchor_top = 0.0
+	color_rect.anchor_right = 1.0
+	color_rect.anchor_bottom = 1.0
+	color_rect.offset_left = 0
+	color_rect.offset_top = 0
+	color_rect.offset_right = 0
+	color_rect.offset_bottom = 0
+	color_rect.size = get_viewport().size
+	get_viewport().size_changed.connect(func():
+		if is_instance_valid(color_rect):
+			color_rect.size = get_viewport().size
+	)
+	color_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas_layer.add_child(color_rect)
+	
+	var material = ShaderMaterial.new()
+	var shader = load("res://ps2_screen_shader.gdshader")
+	if shader:
+		material.shader = shader
+		color_rect.material = material
+		ps2_material = material
+
 func setup_headlights():
 	if not volvo:
 		return
@@ -427,17 +458,39 @@ func setup_ui():
 	fade_layer.layer = 10
 	add_child(fade_layer)
 	
+	# Logo inside ui_layer (layer=1) so it goes through the PS2 CRT shader (layer=2)
+	var logo_root = Control.new()
+	logo_root.anchor_right = 1.0
+	logo_root.anchor_bottom = 1.0
+	logo_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ui_layer.add_child(logo_root)
+	
+	var logo_texture = TextureRect.new()
+	logo_texture.name = "LogoImage"
+	var logo_img = Image.load_from_file(ProjectSettings.globalize_path("res://logo.png"))
+	if logo_img:
+		logo_texture.texture = ImageTexture.create_from_image(logo_img)
+	else:
+		logo_texture.texture = load("res://logo.png")
+	logo_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo_texture.position = Vector2(16, 0)
+	logo_texture.size = Vector2(220, 220)
+	logo_texture.custom_minimum_size = Vector2(220, 220)
+	logo_texture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	logo_root.add_child(logo_texture)
+	
 	# Container for vertical button layout on the left side
 	main_menu_container = VBoxContainer.new()
 	main_menu_container.name = "MainMenuButtons"
 	main_menu_container.size = Vector2(250, 240)
-	main_menu_container.position = Vector2(24, 140)
+	main_menu_container.position = Vector2(24, 195)
 	
 	# Create a subtle vertical accent sidebar line on the left
 	var sidebar_line = ColorRect.new()
 	sidebar_line.name = "MenuSidebar"
 	sidebar_line.size = Vector2(2, 220)
-	sidebar_line.position = Vector2(16, 145)
+	sidebar_line.position = Vector2(16, 200)
 	sidebar_line.color = Color(1.0, 0.91, 0.12, 0.35) # retro semi-transparent gold
 	ui_layer.add_child(sidebar_line)
 	
@@ -477,25 +530,28 @@ func setup_ui():
 	setup_faq_panel()
 	setup_exit_popup()
 
-func setup_button(btn: Button, translation_key: String, pressed_callable: Callable):
+func setup_button(btn: Button, translation_key: String, pressed_callable: Callable, font_size: int = 24):
 	btn.set_meta("translation_key", translation_key)
 	btn.flat = true
 	btn.alignment = HorizontalAlignment.HORIZONTAL_ALIGNMENT_LEFT
-	btn.add_theme_font_size_override("font_size", 24)
+	btn.add_theme_font_size_override("font_size", font_size)
 	btn.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75)) # light grey
 	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.91, 0.12)) # retro yellow gold
 	btn.add_theme_color_override("font_pressed_color", Color(0.9, 0.3, 0.3)) # click red
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	
 	btn.mouse_entered.connect(func():
 		var tk = btn.get_meta("translation_key")
-		if tk == current_options_tab and options_panel and options_panel.visible: return
+		if options_panel and options_panel.visible and tk == current_options_tab: return
+		if faq_panel and faq_panel.visible and tk == "dossier_" + current_faq_tab: return
 		var display_text = menu_locales[active_locale].get(tk, tk)
 		btn.text = "> " + display_text
 		play_hover_sfx()
 	)
 	btn.mouse_exited.connect(func():
 		var tk = btn.get_meta("translation_key")
-		if tk == current_options_tab and options_panel and options_panel.visible: return
+		if options_panel and options_panel.visible and tk == current_options_tab: return
+		if faq_panel and faq_panel.visible and tk == "dossier_" + current_faq_tab: return
 		var display_text = menu_locales[active_locale].get(tk, tk)
 		btn.text = "  " + display_text
 	)
@@ -514,12 +570,12 @@ func create_custom_panel(title_text: String) -> Panel:
 	panel.visible = false
 	
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.04, 0.05, 0.08, 0.95) # Semi-transparent dark charcoal blue
+	style.bg_color = Color(0.015, 0.015, 0.015, 0.97) # Pitch black retro tint
 	style.border_width_left = 2
 	style.border_width_top = 2
 	style.border_width_right = 2
 	style.border_width_bottom = 2
-	style.border_color = Color(0.3, 0.33, 0.35) # Dark grey border
+	style.border_color = Color(0.4, 0.02, 0.02, 1.0) # Dried blood red border
 	style.corner_detail = 1
 	panel.add_theme_stylebox_override("panel", style)
 	
@@ -532,9 +588,19 @@ func create_custom_panel(title_text: String) -> Panel:
 	
 	var font = LabelSettings.new()
 	font.font_size = 22
-	font.font_color = Color(1.0, 0.91, 0.12) # Gold title
+	font.font_color = Color(0.9, 0.8, 0.1) # Rusty gold
+	font.outline_size = 4
+	font.outline_color = Color(0, 0, 0)
 	header.label_settings = font
 	panel.add_child(header)
+	
+	# Vertical divider between sidebar and contents
+	var divider = ColorRect.new()
+	divider.name = "PanelDivider"
+	divider.position = Vector2(230, 50)
+	divider.size = Vector2(2, 335)
+	divider.color = Color(0.4, 0.02, 0.02, 0.8) # Red horror divider line
+	panel.add_child(divider)
 	
 	return panel
 
@@ -543,15 +609,15 @@ func setup_options_panel():
 	
 	# Left sidebar tab selector container
 	var sidebar = VBoxContainer.new()
-	sidebar.position = Vector2(15, 60)
-	sidebar.size = Vector2(160, 320)
+	sidebar.position = Vector2(20, 60)
+	sidebar.size = Vector2(200, 320)
 	options_panel.add_child(sidebar)
 	
 	tab_audio_btn = Button.new()
 	setup_button(tab_audio_btn, "audio", func():
 		play_click_sfx()
 		select_options_tab("audio")
-	)
+	, 18)
 	sidebar.add_child(tab_audio_btn)
 	
 	var s1 = Control.new()
@@ -562,7 +628,7 @@ func setup_options_panel():
 	setup_button(tab_video_btn, "video", func():
 		play_click_sfx()
 		select_options_tab("video")
-	)
+	, 18)
 	sidebar.add_child(tab_video_btn)
 	
 	var s2 = Control.new()
@@ -573,7 +639,7 @@ func setup_options_panel():
 	setup_button(tab_access_btn, "accessibility", func():
 		play_click_sfx()
 		select_options_tab("accessibility")
-	)
+	, 18)
 	sidebar.add_child(tab_access_btn)
 	
 	var s3 = Control.new()
@@ -584,7 +650,7 @@ func setup_options_panel():
 	setup_button(tab_lang_btn, "language", func():
 		play_click_sfx()
 		select_options_tab("language")
-	)
+	, 18)
 	sidebar.add_child(tab_lang_btn)
 	
 	var s4 = Control.new()
@@ -596,18 +662,18 @@ func setup_options_panel():
 		play_click_sfx()
 		options_panel.visible = false
 		main_menu_container.visible = true
-	)
+	, 18)
 	sidebar.add_child(tab_back_btn)
 	
 	# Right side tab contents container
 	var content_container = Control.new()
-	content_container.position = Vector2(190, 60)
-	content_container.size = Vector2(440, 320)
+	content_container.position = Vector2(245, 60)
+	content_container.size = Vector2(385, 320)
 	options_panel.add_child(content_container)
 	
 	# 1. AUDIO PANEL
 	audio_panel = Control.new()
-	audio_panel.size = Vector2(440, 320)
+	audio_panel.size = Vector2(385, 320)
 	content_container.add_child(audio_panel)
 	
 	master_label = Label.new()
@@ -652,13 +718,13 @@ func setup_options_panel():
 	
 	# 2. VIDEO PANEL
 	video_panel = Control.new()
-	video_panel.size = Vector2(440, 320)
+	video_panel.size = Vector2(385, 320)
 	video_panel.visible = false
 	content_container.add_child(video_panel)
 	
 	fullscreen_btn = Button.new()
-	fullscreen_btn.position = Vector2(20, 20)
-	fullscreen_btn.size = Vector2(380, 40)
+	fullscreen_btn.position = Vector2(15, 20)
+	fullscreen_btn.size = Vector2(350, 40)
 	setup_button(fullscreen_btn, "fullscreen", func():
 		play_click_sfx()
 		toggle_fullscreen()
@@ -682,13 +748,13 @@ func setup_options_panel():
 	
 	# 3. ACCESSIBILITY PANEL
 	access_panel = Control.new()
-	access_panel.size = Vector2(440, 320)
+	access_panel.size = Vector2(385, 320)
 	access_panel.visible = false
 	content_container.add_child(access_panel)
 	
 	subtitles_btn = Button.new()
-	subtitles_btn.position = Vector2(20, 20)
-	subtitles_btn.size = Vector2(380, 40)
+	subtitles_btn.position = Vector2(15, 20)
+	subtitles_btn.size = Vector2(350, 40)
 	setup_button(subtitles_btn, "subtitles", func():
 		play_click_sfx()
 		current_subtitles_enabled = not current_subtitles_enabled
@@ -698,8 +764,8 @@ func setup_options_panel():
 	access_panel.add_child(subtitles_btn)
 	
 	colorblind_btn = Button.new()
-	colorblind_btn.position = Vector2(20, 80)
-	colorblind_btn.size = Vector2(380, 40)
+	colorblind_btn.position = Vector2(15, 80)
+	colorblind_btn.size = Vector2(350, 40)
 	setup_button(colorblind_btn, "colorblind_mode", func():
 		play_click_sfx()
 		current_colorblind_mode = (current_colorblind_mode + 1) % 4
@@ -722,15 +788,15 @@ func setup_options_panel():
 	
 	# 4. LANGUAGE PANEL
 	lang_panel = Control.new()
-	lang_panel.size = Vector2(440, 320)
+	lang_panel.size = Vector2(385, 320)
 	lang_panel.visible = false
 	content_container.add_child(lang_panel)
 	
 	var lang_grid = GridContainer.new()
 	lang_grid.columns = 2
-	lang_grid.position = Vector2(20, 30)
-	lang_grid.size = Vector2(380, 240)
-	lang_grid.add_theme_constant_override("h_separation", 20)
+	lang_grid.position = Vector2(15, 30)
+	lang_grid.size = Vector2(350, 240)
+	lang_grid.add_theme_constant_override("h_separation", 15)
 	lang_grid.add_theme_constant_override("v_separation", 15)
 	lang_panel.add_child(lang_grid)
 	
@@ -752,20 +818,23 @@ func setup_options_panel():
 	ui_layer.add_child(options_panel)
 
 func setup_audio_slider(label_ref: Label, slider_ref: HSlider, translation_key: String, y_pos: float, changed_callable: Callable):
-	label_ref.position = Vector2(20, y_pos)
-	label_ref.size = Vector2(400, 30)
+	label_ref.position = Vector2(15, y_pos)
+	label_ref.size = Vector2(355, 30)
 	
 	var label_settings = LabelSettings.new()
-	label_settings.font_size = 16
+	label_settings.font_size = 15
 	label_settings.font_color = Color(0.9, 0.9, 0.9)
+	label_settings.outline_size = 3
+	label_settings.outline_color = Color(0, 0, 0)
 	label_ref.label_settings = label_settings
 	
-	slider_ref.position = Vector2(20, y_pos + 30)
-	slider_ref.size = Vector2(380, 20)
+	slider_ref.position = Vector2(15, y_pos + 30)
+	slider_ref.size = Vector2(350, 20)
 	slider_ref.min_value = 0.0
 	slider_ref.max_value = 1.0
 	slider_ref.step = 0.05
 	slider_ref.value = 1.0
+	slider_ref.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	
 	slider_ref.value_changed.connect(changed_callable)
 
@@ -773,10 +842,11 @@ func setup_language_btn(btn: Button, lang_name: String, locale: String):
 	btn.text = lang_name
 	btn.flat = true
 	btn.alignment = HorizontalAlignment.HORIZONTAL_ALIGNMENT_CENTER
-	btn.add_theme_font_size_override("font_size", 20)
+	btn.add_theme_font_size_override("font_size", 18)
 	btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.91, 0.12))
 	btn.add_theme_color_override("font_pressed_color", Color(0.9, 0.3, 0.3))
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	
 	btn.mouse_entered.connect(func():
 		btn.text = "> " + lang_name + " <"
@@ -815,15 +885,15 @@ func setup_faq_panel():
 	
 	# Left sidebar tabs
 	var sidebar = VBoxContainer.new()
-	sidebar.position = Vector2(15, 60)
-	sidebar.size = Vector2(160, 320)
+	sidebar.position = Vector2(20, 60)
+	sidebar.size = Vector2(200, 320)
 	faq_panel.add_child(sidebar)
 	
 	faq_tab_proj_btn = Button.new()
 	setup_button(faq_tab_proj_btn, "dossier_proj", func():
 		play_click_sfx()
 		select_faq_tab("project")
-	)
+	, 18)
 	sidebar.add_child(faq_tab_proj_btn)
 	
 	var s1 = Control.new()
@@ -834,7 +904,7 @@ func setup_faq_panel():
 	setup_button(faq_tab_tech_btn, "dossier_tech", func():
 		play_click_sfx()
 		select_faq_tab("tech")
-	)
+	, 18)
 	sidebar.add_child(faq_tab_tech_btn)
 	
 	var s2 = Control.new()
@@ -845,7 +915,7 @@ func setup_faq_panel():
 	setup_button(faq_tab_contact_btn, "dossier_contact", func():
 		play_click_sfx()
 		select_faq_tab("contact")
-	)
+	, 18)
 	sidebar.add_child(faq_tab_contact_btn)
 	
 	var s3 = Control.new()
@@ -857,14 +927,14 @@ func setup_faq_panel():
 		play_click_sfx()
 		faq_panel.visible = false
 		main_menu_container.visible = true
-	)
+	, 18)
 	sidebar.add_child(faq_back_btn)
 	
 	# Right side Rich Text Label
 	faq_rich_label = RichTextLabel.new()
 	faq_rich_label.bbcode_enabled = true
-	faq_rich_label.position = Vector2(190, 60)
-	faq_rich_label.size = Vector2(440, 240)
+	faq_rich_label.position = Vector2(245, 60)
+	faq_rich_label.size = Vector2(385, 300)
 	faq_rich_label.meta_clicked.connect(self._on_meta_clicked)
 	faq_rich_label.add_theme_font_size_override("normal_font_size", 14)
 	faq_rich_label.add_theme_font_size_override("bold_font_size", 14)
@@ -903,12 +973,12 @@ func setup_exit_popup():
 	exit_popup.visible = false
 	
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.04, 0.04, 0.95) # Dark crimson red horror tint
+	style.bg_color = Color(0.015, 0.015, 0.015, 0.97) # Pitch black horror
 	style.border_width_left = 2
 	style.border_width_top = 2
 	style.border_width_right = 2
 	style.border_width_bottom = 2
-	style.border_color = Color(0.85, 0.25, 0.25) # Blood red warning borders
+	style.border_color = Color(0.4, 0.02, 0.02, 1.0) # Dried blood border
 	style.corner_detail = 1
 	exit_popup.add_theme_stylebox_override("panel", style)
 	
@@ -963,6 +1033,7 @@ func setup_btn_centered(btn: Button, translation_key: String):
 	btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.91, 0.12))
 	btn.add_theme_color_override("font_pressed_color", Color(0.9, 0.3, 0.3))
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	btn.mouse_entered.connect(func():
 		var tk = btn.get_meta("translation_key")
 		var display_text = menu_locales[active_locale].get(tk, tk)
@@ -1387,6 +1458,7 @@ func load_settings():
 		current_colorblind_mode = 0
 		
 	apply_menu_localization()
+	apply_shader_settings()
 
 func set_menu_bus_volume(bus_name: String, volume_linear: float):
 	ensure_menu_bus_exists("Master")
@@ -1444,6 +1516,12 @@ func update_audio_labels():
 	if voice_label and voice_slider:
 		voice_label.text = data["voice_volume"] % int(voice_slider.value * 100)
 
+func apply_shader_settings():
+	if ps2_material:
+		var val = shader_intensity_slider.value if shader_intensity_slider else 1.0
+		ps2_material.set_shader_parameter("shader_intensity", val)
+		ps2_material.set_shader_parameter("colorblind_mode", current_colorblind_mode)
+
 func update_video_labels():
 	var data = menu_locales[active_locale]
 	if fullscreen_btn:
@@ -1451,6 +1529,7 @@ func update_video_labels():
 		fullscreen_btn.text = "  " + (data["fullscreen"] % fs_str)
 	if shader_intensity_label and shader_intensity_slider:
 		shader_intensity_label.text = data["shader_intensity"] % int(shader_intensity_slider.value * 100)
+	apply_shader_settings()
 
 func update_accessibility_labels():
 	var data = menu_locales[active_locale]
@@ -1463,6 +1542,7 @@ func update_accessibility_labels():
 		colorblind_btn.text = "  " + (data["colorblind_mode"] % cb_str)
 	if mouse_sens_label and mouse_sens_slider:
 		mouse_sens_label.text = data["mouse_sensitivity"] % mouse_sens_slider.value
+	apply_shader_settings()
 
 func update_faq_content():
 	var data = menu_locales[active_locale]
